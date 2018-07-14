@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from aiohttp import web, ClientSession
@@ -39,7 +40,9 @@ async def main_get(request):
         total = rate_limit.limit
         reset_datetime = rate_limit.reset_datetime
 
-    return web.Response(status=200, text=f"You have {remaining} of {total} GitHub API requests remaining. They will reset on {reset_datetime}")
+    return web.Response(status=200, text=f"""\
+You have {remaining} of {total} GitHub API requests remaining. They will
+reset on {reset_datetime} (in {reset_datetime - datetime.datetime.now()}""")
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
