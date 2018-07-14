@@ -50,7 +50,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     comments = gh.getiter(url)
     # Try to find an existing comment to update
     existing_comment = None
-    for comment in comments:
+    async for comment in comments:
         if comment['user']['login'] == user:
             existing_comment = existing_comment
             break
