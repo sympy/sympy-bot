@@ -47,8 +47,23 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     """ Whenever an issue is opened, greet the author and say thanks."""
     url = event.data["pull_request"]["comments_url"]
 
-    message = "I am the SymPy bot. You have edited the pull request description."
-    await gh.post(url, data={"body": message})
+    comments = gh.get(url)
+    # Try to find an existing comment to update
+    existing_comment = None
+    for comment in comments:
+        if comment['user']['login'] == user:
+            existing_comment = existing_comment
+            break
+
+    message = f"""\
+I am the SymPy bot. You have edited the pull request description.
+
+The pull request description is now {''.join(event.data['pull_request']['body'])}.
+"""
+    if not existing_comment:
+        await gh.post(url, data={"body": message})
+    else:
+        await gh.patch(existing_comment['url'], data={"body": message})
 
 if __name__ == "__main__":
     app = web.Application()
