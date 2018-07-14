@@ -61,10 +61,11 @@ The pull request description is now:
 
 {''.join(event.data['pull_request']['body'])}.
 """
-    if not existing_comment:
-        await gh.post(url, data={"body": message})
-    else:
+
+    if existing_comment:
         await gh.patch(existing_comment['url'], data={"body": message})
+    else:
+        await gh.post(url, data={"body": message})
 
 if __name__ == "__main__":
     app = web.Application()
