@@ -19,8 +19,7 @@ async def main_post(request):
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, "asmeurer",
-                                  oauth_token=oauth_token)
+        gh = GitHubAPI(session, "asmeurer", oauth_token=oauth_token)
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
@@ -33,7 +32,9 @@ async def main_get(request):
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
     """ Whenever an issue is opened, greet the author and say thanks."""
-    return event.data
+    url = event.data["pull_request"]["comments_url"]
+
+    await gh.post(url, data={"body": str(event.data)})
 
 if __name__ == "__main__":
     app = web.Application()
