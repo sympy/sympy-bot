@@ -7,6 +7,8 @@ from gidgethub.aiohttp import GitHubAPI
 
 router = routing.Router()
 
+user = 'asmeurer'
+
 async def main_post(request):
     # read the GitHub webhook payload
     body = await request.read()
@@ -19,7 +21,7 @@ async def main_post(request):
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, "asmeurer", oauth_token=oauth_token)
+        gh = GitHubAPI(session, user, oauth_token=oauth_token)
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
