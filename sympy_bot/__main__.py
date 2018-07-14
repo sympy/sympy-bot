@@ -44,7 +44,6 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
-    """ Whenever an issue is opened, greet the author and say thanks."""
     url = event.data["pull_request"]["comments_url"]
 
     comments = gh.getiter(url)
