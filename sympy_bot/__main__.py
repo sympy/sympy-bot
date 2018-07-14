@@ -47,7 +47,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     """ Whenever an issue is opened, greet the author and say thanks."""
     url = event.data["pull_request"]["comments_url"]
 
-    comments = gh.get(url)
+    comments = gh.getiter(url)
     # Try to find an existing comment to update
     existing_comment = None
     for comment in comments:
