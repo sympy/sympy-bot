@@ -33,6 +33,8 @@ async def main_get(request):
     secret = os.environ.get("GH_SECRET")
     oauth_token = os.environ.get("GH_AUTH")
 
+    body = await request.read()
+
     # a representation of GitHub webhook event
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
