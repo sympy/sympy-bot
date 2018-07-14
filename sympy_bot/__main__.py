@@ -34,7 +34,8 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     """ Whenever an issue is opened, greet the author and say thanks."""
     url = event.data["pull_request"]["comments_url"]
 
-    await gh.post(url, data={"body": str(event.data)})
+    message = "I am the SymPy bot. You have edited the pull request description."
+    await gh.post(url, data={"body": message})
 
 if __name__ == "__main__":
     app = web.Application()
