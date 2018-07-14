@@ -29,7 +29,21 @@ async def main_post(request):
     return web.Response(status=200, text=str(result))
 
 async def main_get(request):
-    return web.Response(status=200, text="SymPy Bot")
+    # our authentication token and secret
+    secret = os.environ.get("GH_SECRET")
+    oauth_token = os.environ.get("GH_AUTH")
+
+    # a representation of GitHub webhook event
+    event = sansio.Event.from_http(request.headers, body, secret=secret)
+
+    async with ClientSession() as session:
+        gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        rate_limit = gh.rate_limit
+        remaining = rate_limit.remaining
+        total = rate_limit.limit
+        reset_datetime = rate_limit.reset_datetime
+
+    return web.Response(status=200, text=f"You have {remaining} of {total} GitHub API requests remaining. They will reset on {reset_datetime}")
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
