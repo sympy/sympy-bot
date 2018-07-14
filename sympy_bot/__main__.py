@@ -7,7 +7,7 @@ from gidgethub.aiohttp import GitHubAPI
 
 router = routing.Router()
 
-user = 'asmeurer'
+user = 'sympy-bot'
 
 async def main_post(request):
     # read the GitHub webhook payload
