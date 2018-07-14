@@ -33,6 +33,7 @@ async def main_get(request):
 
     async with ClientSession() as session:
         gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        await gh.getitem("/rate_limit")
         rate_limit = gh.rate_limit
         remaining = rate_limit.remaining
         total = rate_limit.limit
