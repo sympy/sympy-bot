@@ -58,7 +58,9 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     message = f"""\
 I am the SymPy bot. You have edited the pull request description.
 
-The pull request description is now {''.join(event.data['pull_request']['body'])}.
+The pull request description is now:
+
+{''.join(event.data['pull_request']['body'])}.
 """
     if not existing_comment:
         await gh.post(url, data={"body": message})
