@@ -29,8 +29,6 @@ async def main_post(request):
     return web.Response(status=200, text=str(result))
 
 async def main_get(request):
-    # our authentication token and secret
-    secret = os.environ.get("GH_SECRET")
     oauth_token = os.environ.get("GH_AUTH")
 
     async with ClientSession() as session:
