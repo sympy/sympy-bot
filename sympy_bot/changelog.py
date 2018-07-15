@@ -68,6 +68,8 @@ def get_changelog(pr_desc):
             _, header = line.split('*', 1)
             _, header = line.split('-', 1)
             header = header.strip()
+        elif not line.strip():
+            continue
         else:
             if not header:
                 message_list += [
