@@ -45,7 +45,6 @@ def get_changelog(pr_desc):
     status = True
     message_list = []
     changelogs = defaultdict(list)
-    current = None
     header = None
     if isinstance(pr_desc, (str, bytes)):
         pr_desc = pr_desc.splitlines()
