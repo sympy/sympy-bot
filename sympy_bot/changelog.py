@@ -64,8 +64,8 @@ def get_changelog(pr_desc):
         if line.strip() == 'NO ENTRY':
             message_list += ["No changelog entry will be added for this pull request."]
             break
-        elif line.startswith('*'):
-            _, header = line.split('*', 1)
+        elif line.startswith('* ') or line.startswith('- '):
+            _, header = line.split('*', 1).strip('- ')
             header = header.strip()
         else:
             if not header:
