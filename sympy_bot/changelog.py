@@ -61,12 +61,8 @@ def get_changelog(pr_desc):
     for line in lines:
         if line.strip() == "<!-- END RELEASE NOTES -->":
             break
-        if 'Add entry(ies)' in line:
-            _, answer = line.split('?', 1)
-            answer = re.sub('[^a-zA-Z]+', '', answer).lower()
-            if answer in ['no', 'n', 'false', 'f']:
-                message_list += ['Skipping changelog']
-                status = False
+        if line.strip() == 'NO ENTRY':
+            message_list += ["No changelog entry will be added for this pull request."]
             break
         elif line.startswith('*'):
             _, header = line.split('*', 1)
