@@ -68,6 +68,9 @@ The status is **{status_message}**
 {message}
 
 Here are the changelog entries: {changelogs}
+
+If you edit the description, be sure to reload the page to see my latest
+status check!
 """
 
     if existing_comment:
