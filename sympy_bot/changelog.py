@@ -88,7 +88,7 @@ def get_changelog(pr_desc):
             message_list += ['No changelog was detected. If there is no',
                              'changelog entry, please write `NO ENTRY` in the',
                              'PR description under `<!-- BEGIN RELEASE NOTES -->`.']
-        status = False
+            status = False
 
     count = sum(len(changelogs[t]) for t in changelogs)
     if count == 0:
