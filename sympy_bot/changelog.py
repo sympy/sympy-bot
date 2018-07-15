@@ -53,14 +53,14 @@ def get_changelog(pr_desc):
 
     # First find the release notes header
     for line in lines:
-        if line.strip() == "<!- BEGIN RELEASE NOTES ->":
+        if line.strip() == "<!-- BEGIN RELEASE NOTES -->":
             break
     else:
-        return (False, "The `<!- BEGIN RELEASE NOTES ->` block was not found",
+        return (False, "The `<!-- BEGIN RELEASE NOTES -->` block was not found",
                 changelogs)
 
     for line in lines:
-        if line.strip() == "<!- END RELEASE NOTES ->":
+        if line.strip() == "<!-- END RELEASE NOTES -->":
             break
         if 'Add entry(ies)' in line:
             _, answer = line.split('?', 1)
@@ -90,7 +90,7 @@ def get_changelog(pr_desc):
         if not changelogs:
             message_list += ['No changelog was detected. If there is no',
                              'changelog entry, please write `NO ENTRY` in the',
-                             'PR description under `<!- BEGIN RELEASE NOTES ->`.']
+                             'PR description under `<!-- BEGIN RELEASE NOTES -->`.']
         status = False
 
     count = sum(len(changelogs[t]) for t in changelogs)
