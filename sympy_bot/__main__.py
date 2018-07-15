@@ -6,6 +6,8 @@ from aiohttp import web, ClientSession
 from gidgethub import routing, sansio
 from gidgethub.aiohttp import GitHubAPI
 
+from .changelog import get_changelog
+
 router = routing.Router()
 
 user = 'sympy-bot'
@@ -54,18 +56,24 @@ async def pull_request_edited(event, gh, *args, **kwargs):
             existing_comment = comment
             break
 
-    message = f"""\
+    status, message, changelogs = get_changelog(event.data['pull_request']['body'])
+
+    status_message = "OK" if status else "NO GOOD"
+
+    PR_message = f"""\
 I am the SymPy bot. You have edited the pull request description.
 
-The pull request description is now:
+The status is **{status_message}**
 
-{''.join(event.data['pull_request']['body'])}.
+{message}
+
+Here are the changelog entries: {changelogs}
 """
 
     if existing_comment:
         await gh.patch(existing_comment['url'], data={"body": message})
     else:
-        await gh.post(url, data={"body": message})
+        await gh.post(url, data={"body": PR_message})
 
 if __name__ == "__main__":
     app = web.Application()
