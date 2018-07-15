@@ -51,7 +51,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     existing_comment = None
     async for comment in comments:
         if comment['user']['login'] == user:
-            existing_comment = existing_comment
+            existing_comment = comment
             break
 
     message = f"""\
