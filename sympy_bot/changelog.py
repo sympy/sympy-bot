@@ -92,12 +92,11 @@ def get_changelog(pr_desc):
 
     return status, '\n'.join(message_list), changelogs
 
-def get_release_notes_filename():
+def get_release_notes_filename(version):
     """
     Return filename of release notes for current development version
     """
-    import sympy
-    v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', sympy.__version__).group()
+    v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', version).group()
     return 'Release-Notes-for-' + v + '.md'
 
 def update_release_notes(rel_notes_path, changelogs, pr_number):
