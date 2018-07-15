@@ -90,11 +90,6 @@ def get_changelog(pr_desc):
                              'PR description under `<!-- BEGIN RELEASE NOTES -->`.']
             status = False
 
-    count = sum(len(changelogs[t]) for t in changelogs)
-    if count == 0:
-        message_list += ['Changelog not found! Please add a changelog.']
-        status = False
-    message_list += ['%s changelog entr%s found!' % (count, 'y' if count == 1 else 'ies')]
     return status, '\n'.join(message_list), changelogs
 
 def get_release_notes_filename():
