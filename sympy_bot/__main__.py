@@ -71,7 +71,7 @@ Here are the changelog entries: {changelogs}
 """
 
     if existing_comment:
-        await gh.patch(existing_comment['url'], data={"body": message})
+        await gh.patch(existing_comment['url'], data={"body": PR_message})
     else:
         await gh.post(url, data={"body": PR_message})
 
