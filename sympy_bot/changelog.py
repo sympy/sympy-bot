@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os
-import sys
 import re
 import requests
 import subprocess
@@ -16,34 +15,6 @@ HEADERS = [
 PREFIX = '* '
 SUFFIX = ' ([#{pr_number}](../pull/{pr_number}))\n'
 
-def red(text):
-    return "\033[31m%s\033[0m" % text
-
-def green(text):
-    return "\033[32m%s\033[0m" % text
-
-def blue(text):
-    return "\033[34m%s\033[0m" % text
-
-def get_build_information():
-    """
-    Check event type and return PR number
-    """
-    event_type = os.environ['TRAVIS_EVENT_TYPE']
-    if event_type == 'push':
-        match = re.match(r'Merge pull request #(\d+)',
-            os.environ['TRAVIS_COMMIT_MESSAGE']);
-        if not match:
-            sys.exit(red('Cannot find pull request number!'))
-        return match.group(1)
-    elif event_type == 'pull_request':
-        return os.environ['TRAVIS_PULL_REQUEST']
-    elif event_type == 'cron' or event_type == 'api':
-        print(green('Not a push or PR build, skipping changelog'))
-        sys.exit()
-    else:
-        sys.exit(red('Unknown event type!'))
-
 def request_https_get(url):
     """
     Make HTTPS GET request and return response
@@ -57,48 +28,77 @@ def request_https_get(url):
     r.raise_for_status()
     return r
 
-def get_pr_desc(pr_number):
-    """
-    Retrieve pull request description using GitHub API
-    """
-    r = request_https_get('https://api.github.com/repos/' +
-        os.environ['TRAVIS_REPO_SLUG'] + '/pulls/' + pr_number)
-    return r.json()['body']
-
-def get_changelog(data):
+def get_changelog(pr_desc):
     """
     Parse changelogs from a string
+
+    pr_desc should be a string or list or lines of the pull request
+    description.
+
+    Returns a tuple (status, message, changelogs), where:
+
+    - status is a boolean indicating if the changelog entry is valid or not
+    - message is a string with a message to be reported changelogs is a dict
+    - mapping headers to changelog messages
+
     """
+    status = True
+    message_list = []
     changelogs = defaultdict(list)
     current = None
-    for line in data.splitlines():
-        if current:
-            if 'Add entry(ies)' in line:
-                _, answer = line.split('?', 1)
-                answer = re.sub('[^a-zA-Z]+', '', answer).lower()
-                if answer in ['no', 'n', 'false', 'f']:
-                    print(green('Skipping changelog'))
-                    sys.exit()
-                break
-            elif line.startswith('*'):
-                _, message = line.split('*', 1)
-                message = message.strip()
-                if message:
-                    changelogs[header].append(message)
-            elif line.startswith('#### '):
-                for header in HEADERS:
-                    if header in line:
-                        current = header
-                        break
-        elif 'Brief description' in line:
-            current = '_'
+    header = None
+    if isinstance(pr_desc, (str, bytes)):
+        pr_desc = pr_desc.splitlines()
+    lines = iter(pr_desc)
+
+    # First find the release notes header
+    for line in lines:
+        if line.strip() == "<!- BEGIN RELEASE NOTES ->":
+            break
     else:
-        sys.exit(red('Changelog not detected! Please use pull request template.'))
-    count = sum(len(changelogs[t]) for t in HEADERS)
+        return (False, "The `<!- BEGIN RELEASE NOTES ->` block was not found",
+                changelogs)
+
+    for line in lines:
+        if line.strip() == "<!- END RELEASE NOTES ->":
+            break
+        if 'Add entry(ies)' in line:
+            _, answer = line.split('?', 1)
+            answer = re.sub('[^a-zA-Z]+', '', answer).lower()
+            if answer in ['no', 'n', 'false', 'f']:
+                message_list += ['Skipping changelog']
+                status = False
+            break
+        elif line.startswith('*'):
+            _, header = line.split('*', 1)
+            header = header.strip()
+        else:
+            if not header:
+                message_list += [
+                    'No subheader found. Please add a header for',
+                    'the module, for example,',
+                    '',
+                    '```',
+                    '* solvers',
+                    '  * improve solving of trig equations',
+                    '```',
+                ]
+                status = False
+                break
+            changelogs[header].append(line)
+    else:
+        if not changelogs:
+            message_list += ['No changelog was detected. If there is no',
+                             'changelog entry, please write `NO ENTRY` in the',
+                             'PR description under `<!- BEGIN RELEASE NOTES ->`.']
+        status = False
+
+    count = sum(len(changelogs[t]) for t in changelogs)
     if count == 0:
-        sys.exit(red('Changelog not found! Please add a changelog.'))
-    print(green('%s changelog entr%s found!' % (count, 'y' if count == 1 else 'ies')))
-    return changelogs
+        message_list += ['Changelog not found! Please add a changelog.']
+        status = False
+    message_list += ['%s changelog entr%s found!' % (count, 'y' if count == 1 else 'ies')]
+    return status, '\n'.join(message_list), changelogs
 
 def get_release_notes_filename():
     """
