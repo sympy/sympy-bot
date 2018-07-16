@@ -73,3 +73,24 @@ def test_headers():
         'solvers': ['* new solver'],
         'core': ['* faster core', '* better stuff']
     }
+
+def test_bad_headers():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+  * new solver
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "subheader" in message
+    assert not changelogs
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "invalid" in message.lower()
+    assert not changelogs
