@@ -167,7 +167,7 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
             for change in changelogs[header]:
                 new_txt.append(format_change(change, pr_number, authors))
             del changelogs[header]
-        if line == "## AUTHORS":
+        if line == "## Authors":
             del new_txt[-1]
             for header in changelogs:
                 new_txt.append(PREFIX + header)
