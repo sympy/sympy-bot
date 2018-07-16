@@ -52,7 +52,7 @@ def test_error():
     pr_number = '123'
 
     try:
-        new_notes = update_release_notes(notes, changelogs, pr_number, authors)
+        update_release_notes(notes, changelogs, pr_number, authors)
     except RuntimeError as e:
         assert "## Authors" in e.args[0]
     else:
