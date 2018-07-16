@@ -115,3 +115,17 @@ def test_bad_headers():
     assert "header" in message.lower()
     assert "invalid_header" in message
     assert not changelogs
+
+def test_end_release_marker():
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+* stuff after
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {'solvers': ['* new trig solvers']}
