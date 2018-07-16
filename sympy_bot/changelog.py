@@ -87,8 +87,8 @@ def get_changelog(pr_desc):
             changelogs[header].append(line.strip())
     else:
         if not changelogs:
-            message_list += ['No changelog was detected. If there is no',
-                             'changelog entry, please write `NO ENTRY` in the',
+            message_list += ['No release notes were detected. If there is no',
+                             'release notes entry, please write `NO ENTRY` in the',
                              'PR description under `<!-- BEGIN RELEASE NOTES -->`.']
             status = False
 
