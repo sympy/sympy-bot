@@ -94,3 +94,24 @@ def test_bad_headers():
     assert not status
     assert "invalid" in message.lower()
     assert not changelogs
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* new trig solvers
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "header" in message.lower()
+    assert not changelogs
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* invalid_header
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "header" in message.lower()
+    assert "invalid_header" in message
+    assert not changelogs

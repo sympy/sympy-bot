@@ -42,6 +42,12 @@ def get_changelog(pr_desc):
     - mapping headers to changelog messages
 
     """
+    valid_headers = []
+    with open(os.path.join(os.path.dirname(__file__), 'submodules.txt')) as f:
+        for line in f.readlines():
+            if line and not line.startswith('#'):
+                valid_headers.append(line.strip())
+
     status = True
     message_list = []
     changelogs = defaultdict(list)
@@ -69,6 +75,43 @@ def get_changelog(pr_desc):
         elif line.startswith('* ') or line.startswith('- '):
             header = line.lstrip('*- ')
             header = header.strip()
+            if header not in valid_headers:
+                status = False
+                if ' ' in header:
+                    # Most likely just forgot the header
+                    message_list += [
+                        "Release notes must include a header.",
+                        "Please use the submodule name as the header, like",
+                        "```",
+                        "* core",
+                        "  * made Add faster",
+                        "",
+                        "* printing",
+                        "  * improve LaTeX printing of fractions",
+                        "```",
+                    ]
+                else:
+                    message_list += [
+                        "%s is not a valid release notes header." % header,
+                        "Release notes headers should be SymPy submodule"
+                        "names, like",
+                        "```",
+                        "* core",
+                        "  * made Add faster",
+                        "",
+                        "* printing",
+                        "  * improve LaTeX printing of fractions",
+                        "```",
+                        "or `other`.",
+                        "",
+                        "If you have added a new submodule, please add it to",
+                        "the list of valid release notes headers at",
+                        "https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
+                    ]
+
+            else:
+                changelogs[header] # initialize the defaultdict
+
         elif not line.strip():
             continue
         else:
