@@ -176,6 +176,10 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
             new_txt.append(line)
             changelogs.clear()
 
+    new_txt.append('')
+    if changelogs:
+        raise RuntimeError("Not all changelog entries were added. Make sure there is a header called `## Authors` at the end of the release notes.")
+
     return '\n'.join(new_txt)
 
 if __name__ == '__main__':
