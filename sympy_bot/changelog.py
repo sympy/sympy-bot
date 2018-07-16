@@ -28,6 +28,15 @@ def request_https_get(url):
     r.raise_for_status()
     return r
 
+def get_valid_headers():
+    valid_headers = []
+    with open(os.path.join(os.path.dirname(__file__), 'submodules.txt')) as f:
+        for line in f.readlines():
+            if line and not line.startswith('#'):
+                valid_headers.append(line.strip())
+
+    return valid_headers
+
 def get_changelog(pr_desc):
     """
     Parse changelogs from a string
@@ -42,12 +51,6 @@ def get_changelog(pr_desc):
     - mapping headers to changelog messages
 
     """
-    valid_headers = []
-    with open(os.path.join(os.path.dirname(__file__), 'submodules.txt')) as f:
-        for line in f.readlines():
-            if line and not line.startswith('#'):
-                valid_headers.append(line.strip())
-
     status = True
     message_list = []
     changelogs = defaultdict(list)
@@ -55,6 +58,7 @@ def get_changelog(pr_desc):
     if isinstance(pr_desc, (str, bytes)):
         pr_desc = pr_desc.splitlines()
     lines = iter(pr_desc)
+    valid_headers = get_valid_headers()
 
     # First find the release notes header
     for line in lines:
