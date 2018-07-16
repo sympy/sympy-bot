@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import re
-import subprocess
 from collections import defaultdict
 
 PREFIX = '* '
@@ -184,43 +183,3 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
         raise RuntimeError("Not all changelog entries were added. Make sure there is a header called `## Authors` at the end of the release notes.")
 
     return '\n'.join(new_txt)
-
-if __name__ == '__main__':
-    ON_TRAVIS = os.environ.get('TRAVIS', 'false') == 'true'
-
-    if ON_TRAVIS:
-        pr_number = get_build_information()
-    else:
-        while True:
-            test_repo = input("Enter GitHub repository name: ")
-            if test_repo.count("/") == 1:
-                os.environ['TRAVIS_REPO_SLUG'] = test_repo
-                break
-        while True:
-            pr_number = input("Enter PR number: ")
-            if pr_number.isdigit():
-                break
-
-    pr_desc = get_pr_desc(pr_number)
-    changelogs = get_changelog(pr_desc)
-
-    rel_notes_name = get_release_notes_filename()
-    rel_notes_path = os.path.abspath(rel_notes_name)
-
-    if not ON_TRAVIS:
-        print(green('Parsed changelogs:'))
-        print(str(changelogs))
-        print(green('Downloading %s' % rel_notes_name))
-        r = request_https_get('https://raw.githubusercontent.com/wiki/' +
-            os.environ['TRAVIS_REPO_SLUG'] + '/' + rel_notes_name)
-        with open(rel_notes_path, 'w') as f:
-            f.write(r.text)
-
-    print(green('Updating %s' % rel_notes_path))
-    update_release_notes(rel_notes_path, changelogs, pr_number)
-
-    if ON_TRAVIS:
-        print(green('Staging updated release notes'))
-        command = ['git', 'add', rel_notes_path]
-        print(blue(' '.join(command)))
-        subprocess.run(command, check=True)
