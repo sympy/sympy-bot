@@ -156,14 +156,14 @@ def get_release_notes_filename(version):
     v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', version).group()
     return 'Release-Notes-for-' + v + '.md'
 
-def format_change(change, authors):
+def format_change(change, pr_number, authors):
     if len(authors) == 1:
-        authors_info = AUTHOR.format(authors[0])
+        authors_info = AUTHOR.format(author=authors[0])
     elif len(authors) == 2:
-        authors_info = AUTHOR.format(authors[0]) + " and " + AUTHOR.format(authors[1])
+        authors_info = AUTHOR.format(author=authors[0]) + " and " + AUTHOR.format(author=authors[1])
     else:
-        authors_info = ", ".join([AUTHOR.format(author) for author
-            in authors[:-1]]) + ', and ' + AUTHOR.format(authors[-1])
+        authors_info = ", ".join([AUTHOR.format(author=author) for author
+            in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
 
     return ' '*len(PREFIX) + change + SUFFIX.format(pr_number=pr_number, authors=authors_info)
 
