@@ -9,6 +9,7 @@ from collections import defaultdict
 
 PREFIX = '* '
 SUFFIX = ' ([#{pr_number}](../pull/{pr_number}) by {authors})\n'
+AUTHOR = "[@{author}](https://github.com/{author})"
 
 def request_https_get(url):
     """
@@ -155,34 +156,43 @@ def get_release_notes_filename(version):
     v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', version).group()
     return 'Release-Notes-for-' + v + '.md'
 
+def format_change(change, authors):
+    if len(authors) == 1:
+        authors_info = AUTHOR.format(authors[0])
+    elif len(authors) == 2:
+        authors_info = AUTHOR.format(authors[0]) + " and " + AUTHOR.format(authors[1])
+    else:
+        authors_info = ", ".join([AUTHOR.format(author) for author
+            in authors[:-1]]) + ', and ' + AUTHOR.format(authors[-1])
+
+    return ' '*len(PREFIX) + change + SUFFIX.format(pr_number=pr_number, authors=authors_info)
+
 def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
     """
     Update release notes
     """
-    contents = rel_notes_txt.readlines()
+    new_txt = []
 
-    valid_headers = get_valid_headers()
-    current = None
-    for i, line in enumerate(contents):
-        line = line.strip()
-        is_empty = (not line or line == '*')
-        if line.startswith('* '):
-            # last heading is assumed to be not a changelog header
-            if changelogs[current]:
-                suffix = SUFFIX.format(pr_number=pr_number)
-                entry = (PREFIX + (suffix + PREFIX).join(changelogs[current]) +
-                    suffix + '\n')
-                if not is_prev_empty:
-                    contents[i] = contents[i] + entry
-                else:
-                    contents[n] = entry
-            for header in valid_headers:
-                if header in line:
-                    current = header
-                    break
-        elif current and not is_prev_empty and is_empty:
-            n = i
-        is_prev_empty = is_empty
+    changelogs = changelogs.copy()
+    authors = sorted(authors)
+
+    for line in rel_notes_txt.splitlines():
+        new_txt.append(line)
+        header = line.lstrip(PREFIX)
+        if line.startswith(PREFIX) and header in changelogs:
+            for change in changelogs[header]:
+                new_txt.append(format_change(change, authors))
+            del changelogs[header]
+        if line == "## AUTHORS":
+            del new_txt[-1]
+            for header in changelogs:
+                new_txt.append(PREFIX + header)
+                for change in changelogs[header]:
+                    new_txt.append(format_change(change, authors))
+            new_txt.append(line)
+            changelogs.clear()
+
+    return '\n'.join(new_txt)
 
 if __name__ == '__main__':
     ON_TRAVIS = os.environ.get('TRAVIS', 'false') == 'true'
