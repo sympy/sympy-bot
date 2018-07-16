@@ -46,7 +46,7 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
-    url = event.data["pull_request"]["comments_url"]
+    url = event.data["pull_request"]["url"] + '/reviews'
 
     comments = gh.getiter(url)
     # Try to find an existing comment to update
