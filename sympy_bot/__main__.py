@@ -79,7 +79,7 @@ status check!
         await gh.patch(existing_comment['url'], data={"body": PR_message,
             'event': event})
     else:
-        await gh.post(url, data={"body": PR_message})
+        await gh.post(url, data={"body": PR_message, 'event': event})
 
 if __name__ == "__main__":
     app = web.Application()
