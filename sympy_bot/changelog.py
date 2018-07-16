@@ -165,14 +165,14 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
         header = line.lstrip(PREFIX)
         if line.startswith(PREFIX) and header in changelogs:
             for change in changelogs[header]:
-                new_txt.append(format_change(change, authors))
+                new_txt.append(format_change(change, pr_number, authors))
             del changelogs[header]
         if line == "## AUTHORS":
             del new_txt[-1]
             for header in changelogs:
                 new_txt.append(PREFIX + header)
                 for change in changelogs[header]:
-                    new_txt.append(format_change(change, authors))
+                    new_txt.append(format_change(change, pr_number, authors))
             new_txt.append(line)
             changelogs.clear()
 
