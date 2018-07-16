@@ -7,13 +7,8 @@ from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from collections import defaultdict
 
-HEADERS = [
-    'Major changes',
-    'Backwards compatibility breaks',
-    'Minor changes'
-]
 PREFIX = '* '
-SUFFIX = ' ([#{pr_number}](../pull/{pr_number}))\n'
+SUFFIX = ' ([#{pr_number}](../pull/{pr_number}) by {authors})\n'
 
 def request_https_get(url):
     """
@@ -160,18 +155,18 @@ def get_release_notes_filename(version):
     v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', version).group()
     return 'Release-Notes-for-' + v + '.md'
 
-def update_release_notes(rel_notes_path, changelogs, pr_number):
+def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
     """
     Update release notes
     """
-    rel_notes = open(rel_notes_path, 'r+')
-    contents = rel_notes.readlines()
+    contents = rel_notes_txt.readlines()
 
+    valid_headers = get_valid_headers()
     current = None
-    for i in range(len(contents)):
-        line = contents[i].strip()
+    for i, line in enumerate(contents):
+        line = line.strip()
         is_empty = (not line or line == '*')
-        if line.startswith('## '):
+        if line.startswith('* '):
             # last heading is assumed to be not a changelog header
             if changelogs[current]:
                 suffix = SUFFIX.format(pr_number=pr_number)
@@ -181,18 +176,13 @@ def update_release_notes(rel_notes_path, changelogs, pr_number):
                     contents[i] = contents[i] + entry
                 else:
                     contents[n] = entry
-            for header in HEADERS:
+            for header in valid_headers:
                 if header in line:
                     current = header
                     break
         elif current and not is_prev_empty and is_empty:
             n = i
         is_prev_empty = is_empty
-
-    rel_notes.seek(0)
-    rel_notes.writelines(contents)
-    rel_notes.truncate()
-    rel_notes.close()
 
 if __name__ == '__main__':
     ON_TRAVIS = os.environ.get('TRAVIS', 'false') == 'true'
