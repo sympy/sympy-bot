@@ -157,6 +157,7 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
     """
     new_txt = []
 
+    valid_headers = get_valid_headers()
     changelogs = changelogs.copy()
     authors = sorted(authors)
 
@@ -169,10 +170,12 @@ def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
             del changelogs[header]
         if line == "## Authors":
             del new_txt[-1]
-            for header in changelogs:
-                new_txt.append(PREFIX + header)
-                for change in changelogs[header]:
-                    new_txt.append(format_change(change, pr_number, authors))
+            # Keep the order from submodules.txt
+            for header in valid_headers:
+                if header in changelogs:
+                    new_txt.append(PREFIX + header)
+                    for change in changelogs[header]:
+                        new_txt.append(format_change(change, pr_number, authors))
             new_txt.append(line)
             changelogs.clear()
 
