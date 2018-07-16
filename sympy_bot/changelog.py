@@ -84,7 +84,7 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
-            changelogs[header].append(line)
+            changelogs[header].append(line.strip())
     else:
         if not changelogs:
             message_list += ['No changelog was detected. If there is no',
