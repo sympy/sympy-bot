@@ -78,7 +78,7 @@ status check!
     if existing_comment:
         review_id = existing_comment['id']
         url += '/' + str(review_id) + '/reviews'
-        await gh.patch(existing_comment['url'], data={"body": PR_message,
+        await gh.patch(url, data={"body": PR_message,
             'event': event})
     else:
         await gh.post(url, data={"body": PR_message, 'event': event})
