@@ -73,8 +73,11 @@ If you edit the description, be sure to reload the page to see my latest
 status check!
 """
 
+    event = "APPROVE" if status else "REQUEST_CHANGES"
+
     if existing_comment:
-        await gh.patch(existing_comment['url'], data={"body": PR_message})
+        await gh.patch(existing_comment['url'], data={"body": PR_message,
+            'event': event})
     else:
         await gh.post(url, data={"body": PR_message})
 
