@@ -1,28 +1,12 @@
 #!/usr/bin/env python
 import os
 import re
-import requests
 import subprocess
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from collections import defaultdict
 
 PREFIX = '* '
 SUFFIX = ' ([#{pr_number}](../pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
-
-def request_https_get(url):
-    """
-    Make HTTPS GET request and return response
-    """
-    s = requests.Session()
-    retry = Retry(total=5, read=5, connect=5, backoff_factor=0.1,
-        status_forcelist=(500, 502, 503, 504))
-    adapter = HTTPAdapter(max_retries=retry)
-    s.mount('https://', adapter)
-    r = s.get(url)
-    r.raise_for_status()
-    return r
 
 def get_valid_headers():
     valid_headers = []
