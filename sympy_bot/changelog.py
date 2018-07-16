@@ -99,10 +99,11 @@ def get_changelog(pr_desc):
                 'Make sure it has a release notes entry under it.',
             ]
             status = False
-            changelogs.clear()
     if not message_list:
         message_list = ["Your release notes are in good order.",
                         "Here is what they will look like:"]
+    if not status:
+        changelogs.clear()
     return status, '\n'.join(message_list), changelogs
 
 def get_release_notes_filename(version):
