@@ -2,6 +2,7 @@ import datetime
 import os
 import base64
 import subprocess
+import urllib
 
 from aiohttp import web, ClientSession
 
@@ -129,7 +130,37 @@ status check!
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
 
-    update_wiki(wiki_url)
+    if status:
+        update_wiki(
+            wiki_url=wiki_url,
+            release_notes_file=release_notes_file,
+            changelogs=changelogs,
+            pr_number=number,
+            authors=users,
+        )
 
-def update_wiki(wiki_url):
+def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
     subprocess.run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
+    _, repo, wiki = wiki_url.rsplit('/', 2)
+    os.chdir(os.path.join(repo, wiki))
+
+    with open(release_notes_file, 'r') as f:
+        rel_notes_txt = f.read()
+
+    new_rel_notes_txt = update_release_notes(rel_notes_txt, changelogs,
+        pr_number, authors)
+
+    with open(release_notes_file, 'w') as f:
+        f.write(new_rel_notes_txt)
+
+    subprocess.run(['git', 'add', release_notes_file], check=True)
+
+    message = f"Update {release_notes_file} from PR #{pr_number}"
+    subprocess.run(['git', 'commit', '-m', message], check=True)
+
+    parsed_url = list(urllib.parse.parse_url(wiki_url))
+    parsed_url[1] = os.environ.get("GH_AUTH") + '@' + parsed_url[1]
+    auth_url = urllib.parse.urlunparse(parsed_url)
+
+    # TODO: Use a deploy key to do this
+    subprocess.run(['git', 'push', auth_url], check=True)
