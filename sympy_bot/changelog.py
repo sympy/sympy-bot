@@ -151,7 +151,7 @@ def format_change(change, pr_number, authors):
 
     return ' '*len(PREFIX) + change + SUFFIX.format(pr_number=pr_number, authors=authors_info)
 
-def update_release_notes(rel_notes_txt, changelogs, pr_number, authors):
+def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
     """
     Update release notes
     """
