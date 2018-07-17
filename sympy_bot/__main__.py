@@ -47,6 +47,10 @@ async def main_get(request):
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
     url = event.data["pull_request"]["comments_url"]
+    number = event.data["pull_request"]["number"]
+    # TODO: Get the full list of users with commits, not just the user who
+    # opened the PR.
+    users = [event.data['pull_request']['head']['user']['login']]
 
     comments = gh.getiter(url)
     # Try to find an existing comment to update
@@ -60,14 +64,21 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     status_message = "OK" if status else "NO GOOD"
 
+
+    if status:
+        fake_release_notes = """
+## Authors
+"""
+        updated_fake_release_notes = update_release_notes(fake_release_notes,
+        changelogs, number, users).replace('## Authors', '').strip()
+        message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}'
+
     PR_message = f"""\
 I am the SymPy bot. You have edited the pull request description.
 
 The status is **{status_message}**
 
 {message}
-
-Here are the changelog entries: {changelogs}
 
 If you edit the description, be sure to reload the page to see my latest
 status check!
