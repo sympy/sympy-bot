@@ -68,6 +68,8 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
+    gh_status = 'success' if status else 'failure'
+
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
         try:
@@ -77,6 +79,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
             m = False
         if not m:
             status = False
+            gh_status = 'error'
             message = f"""\
 There was an error getting the version from the `{RELEASE_FILE}` file. Please
 open an issue at https://github.com/sympy/sympy-bot/issues."""
@@ -108,9 +111,16 @@ status check!
 """
 
     if existing_comment:
-        await gh.patch(existing_comment['url'], data={"body": PR_message})
+        comment = await gh.patch(existing_comment['url'], data={"body": PR_message})
     else:
-        await gh.post(url, data={"body": PR_message})
+        comment = await gh.post(url, data={"body": PR_message})
+    statuses_url = event.data['pull_request']['statuses_url']
+    await gh.post(statuses_url, data=dict(
+        state=gh_status,
+        target_url=comment['html_url'],
+        description=status_message,
+        context='sympy-bot/release-notes',
+    ))
 
 if __name__ == "__main__":
     app = web.Application()
