@@ -152,11 +152,12 @@ async def error_comment(event, gh, message):
     message = message.replace(token, '~~~TOKEN~~~')
 
     error_message = f"""\
-Warning: there was an error automatically updating the release notes. You
-might want to open an issue about this at
-https://github.com/sympy/sympy-bot/issues.
+Warning: there was an error automatically updating the release notes. Normally
+it should not have been possible to merge this pull request. You might want to
+open an issue about this at https://github.com/sympy/sympy-bot/issues.
 
-In the mean time, you will need to update the release notes on the wiki manually.
+In the mean time, you will need to update the release notes on the wiki
+manually.
 
 The error message was: {message}
 """
