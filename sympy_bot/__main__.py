@@ -49,6 +49,9 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
+    if event.data['pull_request']['state'] == "closed":
+        return
+
     url = event.data["pull_request"]["comments_url"]
     number = event.data["pull_request"]["number"]
     # TODO: Get the full list of users with commits, not just the user who
