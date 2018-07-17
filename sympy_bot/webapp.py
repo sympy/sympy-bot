@@ -140,7 +140,7 @@ status check!
                 pr_number=number,
                 authors=users,
             )
-        except RuntimeError as e:
+        except (subprocess.CalledProcessError, RuntimeError) as e:
             await error_comment(event, gh, e.args[0])
 
 async def error_comment(event, gh, message):
@@ -148,6 +148,9 @@ async def error_comment(event, gh, message):
     Add a new comment with an error message. For use when updating the release
     notes fails.
     """
+    token = os.environ.get("GH_AUTH")
+    message = message.replace(token, '~~~TOKEN~~~')
+
     error_message = f"""\
 Warning: there was an error automatically updating the release notes. You
 might want to open an issue about this at
