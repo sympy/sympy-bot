@@ -96,7 +96,7 @@ open an issue at https://github.com/sympy/sympy-bot/issues."""
         fake_release_notes = """
 ## Authors
 """
-        wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file
+        wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
 
         updated_fake_release_notes = update_release_notes(fake_release_notes,
             changelogs, number, users).replace('## Authors', '').strip()
