@@ -1,12 +1,14 @@
 import datetime
 import os
+import base64
 
 from aiohttp import web, ClientSession
 
 from gidgethub import routing, sansio
 from gidgethub.aiohttp import GitHubAPI
 
-from .changelog import get_changelog, update_release_notes
+from .changelog import (get_changelog, update_release_notes, VERSION_RE,
+                        get_release_notes_filename)
 
 router = routing.Router()
 
@@ -51,6 +53,9 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     # TODO: Get the full list of users with commits, not just the user who
     # opened the PR.
     users = [event.data['pull_request']['head']['user']['login']]
+    contents_url = event.data['pull_request']['base']['repo']['contents_url']
+
+    version_url = contents_url.replace('{+path}', 'sympy/release.py')
 
     comments = gh.getiter(url)
     # Try to find an existing comment to update
@@ -62,16 +67,30 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
-    status_message = "OK" if status else "NO GOOD"
+    release_notes_file = "!!ERROR!! Could not get the release notes filename!"
+    if status:
+        release_file = await gh.get(version_url)
+        m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
+        if not m:
+            status = False
+            message = """\
+There was an error getting the version from the sympy/release.py file. Please
+open an issue at https://github.com/sympy/sympy-bot/issues."""
+        else:
+            version = m.group()
+            release_notes_file = get_release_notes_filename(version)
 
+    status_message = "OK" if status else "NO GOOD"
 
     if status:
         fake_release_notes = """
 ## Authors
 """
+        wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file
+
         updated_fake_release_notes = update_release_notes(fake_release_notes,
             changelogs, number, users).replace('## Authors', '').strip()
-        message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}'
+        message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
 I am the SymPy bot. You have edited the pull request description.

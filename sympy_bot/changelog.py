@@ -7,6 +7,7 @@ from collections import defaultdict
 PREFIX = '* '
 SUFFIX = ' ([#{pr_number}](../pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
+VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
 
 def get_valid_headers():
     valid_headers = []
@@ -136,7 +137,7 @@ def get_release_notes_filename(version):
     """
     Return filename of release notes for current development version
     """
-    v = re.match(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)', version).group()
+    v = VERSION_RE.match(version).group()
     return 'Release-Notes-for-' + v + '.md'
 
 def format_change(change, pr_number, authors):
