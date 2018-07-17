@@ -142,8 +142,8 @@ status check!
 
 def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
     subprocess.run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
-    _, repo, wiki = wiki_url.rsplit('/', 2)
-    os.chdir(os.path.join(repo, wiki))
+    _, wiki = wiki_url.rsplit('/', 1)
+    os.chdir(wiki)
 
     with open(release_notes_file, 'r') as f:
         rel_notes_txt = f.read()
