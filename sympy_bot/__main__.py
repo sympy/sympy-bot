@@ -117,6 +117,7 @@ status check!
         comment = await gh.patch(existing_comment['url'], data={"body": PR_message})
     else:
         comment = await gh.post(url, data={"body": PR_message})
+
     statuses_url = event.data['pull_request']['statuses_url']
     await gh.post(statuses_url, data=dict(
         state=gh_status,
