@@ -132,13 +132,43 @@ status check!
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
 
     if status:
-        update_wiki(
-            wiki_url=wiki_url,
-            release_notes_file=release_notes_file,
-            changelogs=changelogs,
-            pr_number=number,
-            authors=users,
-        )
+        try:
+            update_wiki(
+                wiki_url=wiki_url,
+                release_notes_file=release_notes_file,
+                changelogs=changelogs,
+                pr_number=number,
+                authors=users,
+            )
+        except RuntimeError as e:
+            await error_comment(event, gh, e.args[0])
+
+async def error_comment(event, gh, message):
+    """
+    Add a new comment with an error message. For use when updating the release
+    notes fails.
+    """
+    error_message = f"""\
+Warning: there was an error automatically updating the release notes. You
+might want to open an issue about this at
+https://github.com/sympy/sympy-bot/issues.
+
+In the mean time, you will need to update the release notes on the wiki manually.
+
+The error message was: {message}
+"""
+
+    url = event.data["pull_request"]["comments_url"]
+    comment = await gh.post(url, data={"body": error_message})
+
+    statuses_url = event.data['pull_request']['statuses_url']
+    await gh.post(statuses_url, data=dict(
+        state='error',
+        target_url=comment['html_url'],
+        description='There was an error updating the release notes on the wiki.',
+        context='sympy-bot/release-notes',
+    ))
+
 
 def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
     subprocess.run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
