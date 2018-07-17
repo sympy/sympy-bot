@@ -13,6 +13,7 @@ from .changelog import (get_changelog, update_release_notes, VERSION_RE,
 router = routing.Router()
 
 USER = 'sympy-bot'
+RELEASE_FILE = 'sympy/release.py'
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -55,7 +56,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     users = [event.data['pull_request']['head']['user']['login']]
     contents_url = event.data['pull_request']['base']['repo']['contents_url']
 
-    version_url = contents_url.replace('{+path}', 'sympy/release.py')
+    version_url = contents_url.replace('{+path}', RELEASE_FILE)
 
     comments = gh.getiter(url)
     # Try to find an existing comment to update
@@ -77,7 +78,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         if not m:
             status = False
             message = """\
-There was an error getting the version from the sympy/release.py file. Please
+There was an error getting the version from the `{RELEASE_FILE}` file. Please
 open an issue at https://github.com/sympy/sympy-bot/issues."""
         else:
             version = m.group()
