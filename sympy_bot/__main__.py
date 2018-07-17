@@ -69,7 +69,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
-        release_file = await gh.get(version_url)
+        release_file = await gh.getitem(version_url)
         m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
         if not m:
             status = False
