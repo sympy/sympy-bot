@@ -123,7 +123,7 @@ def get_changelog(pr_desc):
     for header in changelogs:
         if not changelogs[header]:
             message_list += [
-                'Invalid release notes entry for %s.' % header,
+                'Invalid release notes entry for `%s`.' % header,
                 'Make sure it has a release notes entry under it.',
             ]
             status = False
