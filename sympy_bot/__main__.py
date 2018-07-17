@@ -110,6 +110,7 @@ status check!
         """ % dict(existing_review=existing_review, body=PR_message)
 
         r = await gh.post(graphql_url, data={'query': update_review_query})
+        print(r)
     else:
         url = event.data["pull_request"]["url"] + '/reviews'
         await gh.post(url, data={"body": PR_message, 'event': state})
