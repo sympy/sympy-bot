@@ -47,6 +47,7 @@ Next you need to set up the bot on GitHub. To do so, follow these steps:
      IMPORTANT:** Give the token `public_repo` access only.
 
 3. Give the `sympy-bot` user push access to the repo. This is required for the
-   bot to set commit statuses. If you know how to allow it to do this without
-   giving it as much access, please let me know. I have tried playing with
-   using reviews instead of statuses, but I couldn't get it to work.
+   bot to set commit statuses and to push to the wiki. If you know how to
+   allow it to do this without giving it as much access, please let me know. I
+   have tried playing with using reviews instead of statuses, but I couldn't
+   get it to work.
