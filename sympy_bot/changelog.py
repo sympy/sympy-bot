@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
+
 from collections import defaultdict
 
 PREFIX = '* '
@@ -126,8 +127,7 @@ def get_changelog(pr_desc):
             ]
             status = False
     if not message_list:
-        message_list = ["Your release notes are in good order.",
-                        "Here is what they will look like:"]
+        message_list = ["Your release notes are in good order."]
     if not status:
         changelogs.clear()
     return status, '\n'.join(message_list), changelogs

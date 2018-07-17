@@ -71,7 +71,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 """
         updated_fake_release_notes = update_release_notes(fake_release_notes,
             changelogs, number, users).replace('## Authors', '').strip()
-        message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}'
+        message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}'
 
     PR_message = f"""\
 I am the SymPy bot. You have edited the pull request description.
