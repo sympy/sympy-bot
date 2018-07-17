@@ -12,6 +12,8 @@ router = routing.Router()
 
 user = 'sympy-bot'
 
+graphql_url = 'https://api.github.com/graphql'
+
 async def main_post(request):
     # read the GitHub webhook payload
     body = await request.read()
@@ -46,14 +48,35 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
-    url = event.data["pull_request"]["url"] + '/reviews'
+    # We have to use the GraphQL API to update a pull request review
+    user = event.data['user']['login']
+    repo = event.data['repo']['name']
+    number = event.data['number']
+    # Avoid f-string formatting, as that requires escaping every {
+    get_review_id_query = """
+    query FindReview {
+      repository(owner: "%(user)s", name: "%(repo)s") {
+        pullRequest(number: %(number)s) {
+          reviews(first: 100) {
+            edges {
+              node {
+                author {login}
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+    """ % dict(user=user, repo=repo, number=number)
 
-    comments = gh.getiter(url)
+    r = await gh.post(graphql_url, json={'query': get_review_id_query})
+    reviews = r['data']['repository']['pullRequest']['reviews']['edges']
     # Try to find an existing comment to update
-    existing_comment = None
-    async for comment in comments:
-        if comment['user']['login'] == user:
-            existing_comment = comment
+    existing_review = None
+    async for review in reviews:
+        if review['node']['author']['login'] == user:
+            existing_review = review['node']['id']
             break
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
@@ -75,12 +98,21 @@ status check!
 
     event = "APPROVE" if status else "REQUEST_CHANGES"
 
-    if existing_comment:
-        review_id = existing_comment['id']
-        url += '/' + str(review_id)
-        await gh.patch(url, data={"body": PR_message,
-            'event': event})
+
+    if existing_review:
+        update_review_query = """
+        mutation UpdateReview {
+          updatePullRequestReview(input: {pullRequestReviewId: "%(existing_review)s==", body: "%(body)s"}) {
+            pullRequestReview {
+              updatedAt
+            }
+          }
+        }
+        """ % dict(existing_review=existing_review, body=PR_message)
+
+        r = await gh.post(graphql_url, json={'query': update_review_query})
     else:
+        url = event.data["pull_request"]["url"] + '/reviews'
         await gh.post(url, data={"body": PR_message, 'event': event})
 
 if __name__ == "__main__":
