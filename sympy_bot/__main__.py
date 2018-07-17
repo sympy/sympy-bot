@@ -70,7 +70,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     }
     """ % dict(user=user, repo=repo, number=number)
 
-    r = await gh.post(graphql_url, json={'query': get_review_id_query})
+    r = await gh.post(graphql_url, data={'query': get_review_id_query})
     reviews = r['data']['repository']['pullRequest']['reviews']['edges']
     # Try to find an existing comment to update
     existing_review = None
@@ -110,7 +110,7 @@ status check!
         }
         """ % dict(existing_review=existing_review, body=PR_message)
 
-        r = await gh.post(graphql_url, json={'query': update_review_query})
+        r = await gh.post(graphql_url, data={'query': update_review_query})
     else:
         url = event.data["pull_request"]["url"] + '/reviews'
         await gh.post(url, data={"body": PR_message, 'event': event})
