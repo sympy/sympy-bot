@@ -74,7 +74,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     reviews = r['data']['repository']['pullRequest']['reviews']['edges']
     # Try to find an existing comment to update
     existing_review = None
-    async for review in reviews:
+    for review in reviews:
         if review['node']['author']['login'] == user:
             existing_review = review['node']['id']
             break
