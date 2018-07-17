@@ -1,6 +1,7 @@
 import datetime
 import os
 import base64
+import subprocess
 
 from aiohttp import web, ClientSession
 
@@ -125,3 +126,10 @@ status check!
         description=status_message,
         context='sympy-bot/release-notes',
     ))
+
+    wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
+
+    update_wiki(wiki_url)
+
+def update_wiki(wiki_url):
+    subprocess.run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
