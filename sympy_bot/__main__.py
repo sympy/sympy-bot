@@ -10,9 +10,7 @@ from .changelog import get_changelog
 
 router = routing.Router()
 
-USER = 'sympy-bot'
-
-graphql_url = 'https://api.github.com/graphql'
+user = 'sympy-bot'
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -26,7 +24,7 @@ async def main_post(request):
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
+        gh = GitHubAPI(session, user, oauth_token=oauth_token)
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
@@ -37,7 +35,7 @@ async def main_get(request):
     oauth_token = os.environ.get("GH_AUTH")
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
+        gh = GitHubAPI(session, user, oauth_token=oauth_token)
         await gh.getitem("/rate_limit")
         rate_limit = gh.rate_limit
         remaining = rate_limit.remaining
@@ -48,35 +46,14 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
-    # We have to use the GraphQL API to update a pull request review
-    user = event.data['pull_request']['user']['login']
-    repo = event.data['pull_request']['head']['repo']['name']
-    number = event.data['pull_request']['number']
-    # Avoid f-string formatting, as that requires escaping every {
-    get_review_id_query = """
-    query FindReview {
-      repository(owner: "%(user)s", name: "%(repo)s") {
-        pullRequest(number: %(number)s) {
-          reviews(first: 100) {
-            edges {
-              node {
-                author {login}
-                id
-              }
-            }
-          }
-        }
-      }
-    }
-    """ % dict(user=user, repo=repo, number=number)
+    url = event.data["pull_request"]["comments_url"]
 
-    r = await gh.post(graphql_url, data={'query': get_review_id_query})
-    reviews = r['data']['repository']['pullRequest']['reviews']['edges']
+    comments = gh.getiter(url)
     # Try to find an existing comment to update
-    existing_review = None
-    for review in reviews:
-        if review['node']['author']['login'] == USER:
-            existing_review = review['node']['id']
+    existing_comment = None
+    async for comment in comments:
+        if comment['user']['login'] == user:
+            existing_comment = comment
             break
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
@@ -96,24 +73,10 @@ If you edit the description, be sure to reload the page to see my latest
 status check!
 """
 
-    state = "APPROVE" if status else "REQUEST_CHANGES"
-
-    if existing_review:
-        update_review_query = """
-        mutation UpdateReview {
-          updatePullRequestReview(input: {pullRequestReviewId: "%(existing_review)s==", body: "%(body)s"}) {
-            pullRequestReview {
-              updatedAt
-            }
-          }
-        }
-        """ % dict(existing_review=existing_review, body=PR_message)
-
-        r = await gh.post(graphql_url, data={'query': update_review_query})
-        print(r)
+    if existing_comment:
+        await gh.patch(existing_comment['url'], data={"body": PR_message})
     else:
-        url = event.data["pull_request"]["url"] + '/reviews'
-        await gh.post(url, data={"body": PR_message, 'event': state})
+        await gh.post(url, data={"body": PR_message})
 
 if __name__ == "__main__":
     app = web.Application()
