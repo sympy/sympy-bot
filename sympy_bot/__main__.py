@@ -72,6 +72,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     r = await gh.post(graphql_url, data={'query': get_review_id_query})
     reviews = r['data']['repository']['pullRequest']['reviews']['edges']
+    print(reviews)
     # Try to find an existing comment to update
     existing_review = None
     for review in reviews:
