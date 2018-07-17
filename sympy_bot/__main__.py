@@ -4,7 +4,7 @@ import base64
 
 from aiohttp import web, ClientSession
 
-from gidgethub import routing, sansio
+from gidgethub import routing, sansio, BadRequest
 from gidgethub.aiohttp import GitHubAPI
 
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
@@ -69,8 +69,11 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
-        release_file = await gh.getitem(version_url)
-        m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
+        try:
+            release_file = await gh.getitem(version_url)
+            m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
+        except BadRequest: # file not found
+            m = False
         if not m:
             status = False
             message = """\
