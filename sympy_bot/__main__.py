@@ -10,7 +10,7 @@ from .changelog import get_changelog
 
 router = routing.Router()
 
-user = 'sympy-bot'
+USER = 'sympy-bot'
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -24,7 +24,7 @@ async def main_post(request):
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
@@ -35,7 +35,7 @@ async def main_get(request):
     oauth_token = os.environ.get("GH_AUTH")
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
         await gh.getitem("/rate_limit")
         rate_limit = gh.rate_limit
         remaining = rate_limit.remaining
@@ -52,7 +52,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     # Try to find an existing comment to update
     existing_comment = None
     async for comment in comments:
-        if comment['user']['login'] == user:
+        if comment['user']['login'] == USER:
             existing_comment = comment
             break
 
