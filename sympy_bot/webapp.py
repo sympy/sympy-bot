@@ -131,18 +131,22 @@ status check!
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
 
-    if status:
-        try:
-            update_wiki(
-                wiki_url=wiki_url,
-                release_notes_file=release_notes_file,
-                changelogs=changelogs,
-                pr_number=number,
-                authors=users,
-            )
-        except (subprocess.CalledProcessError, RuntimeError) as e:
-            await error_comment(event, gh, e.args[0])
-
+    if (event.data['action'] == 'closed' and
+        event.data['pull_request']['merged'] == True):
+        if status:
+            try:
+                update_wiki(
+                    wiki_url=wiki_url,
+                    release_notes_file=release_notes_file,
+                    changelogs=changelogs,
+                    pr_number=number,
+                    authors=users,
+                )
+            except (subprocess.CalledProcessError, RuntimeError) as e:
+                await error_comment(event, gh, e.args[0])
+        else:
+            message = "The pull request was merged even though the release notes bot had a failing status."
+            await error_comment(event, gh, message)
 async def error_comment(event, gh, message):
     """
     Add a new comment with an error message. For use when updating the release
