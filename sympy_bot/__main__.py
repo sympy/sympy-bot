@@ -49,9 +49,9 @@ async def main_get(request):
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
     # We have to use the GraphQL API to update a pull request review
-    user = event.data['user']['login']
-    repo = event.data['repo']['name']
-    number = event.data['number']
+    user = event.data['pull_request']['user']['login']
+    repo = event.data['pull_request']['repo']['name']
+    number = event.data['pull_request']['number']
     # Avoid f-string formatting, as that requires escaping every {
     get_review_id_query = """
     query FindReview {
