@@ -10,7 +10,7 @@ from .changelog import get_changelog
 
 router = routing.Router()
 
-user = 'sympy-bot'
+USER = 'sympy-bot'
 
 graphql_url = 'https://api.github.com/graphql'
 
@@ -26,7 +26,7 @@ async def main_post(request):
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
@@ -37,7 +37,7 @@ async def main_get(request):
     oauth_token = os.environ.get("GH_AUTH")
 
     async with ClientSession() as session:
-        gh = GitHubAPI(session, user, oauth_token=oauth_token)
+        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
         await gh.getitem("/rate_limit")
         rate_limit = gh.rate_limit
         remaining = rate_limit.remaining
@@ -72,11 +72,10 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     r = await gh.post(graphql_url, data={'query': get_review_id_query})
     reviews = r['data']['repository']['pullRequest']['reviews']['edges']
-    print(reviews)
     # Try to find an existing comment to update
     existing_review = None
     for review in reviews:
-        if review['node']['author']['login'] == user:
+        if review['node']['author']['login'] == USER:
             existing_review = review['node']['id']
             break
 
