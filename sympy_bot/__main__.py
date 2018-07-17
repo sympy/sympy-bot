@@ -77,7 +77,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
             m = False
         if not m:
             status = False
-            message = """\
+            message = f"""\
 There was an error getting the version from the `{RELEASE_FILE}` file. Please
 open an issue at https://github.com/sympy/sympy-bot/issues."""
         else:
