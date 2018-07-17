@@ -96,8 +96,7 @@ If you edit the description, be sure to reload the page to see my latest
 status check!
 """
 
-    event = "APPROVE" if status else "REQUEST_CHANGES"
-
+    state = "APPROVE" if status else "REQUEST_CHANGES"
 
     if existing_review:
         update_review_query = """
@@ -113,7 +112,7 @@ status check!
         r = await gh.post(graphql_url, data={'query': update_review_query})
     else:
         url = event.data["pull_request"]["url"] + '/reviews'
-        await gh.post(url, data={"body": PR_message, 'event': event})
+        await gh.post(url, data={"body": PR_message, 'event': state})
 
 if __name__ == "__main__":
     app = web.Application()
