@@ -154,6 +154,8 @@ def format_change(change, pr_number, authors):
 def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
     """
     Update release notes
+
+    changelogs is assumed to only contain valid headers
     """
     new_txt = []
 
@@ -163,11 +165,29 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
 
     for line in rel_notes_txt.splitlines():
         new_txt.append(line)
-        header = line.lstrip(PREFIX)
-        if line.startswith(PREFIX) and header in changelogs:
-            for change in changelogs[header]:
-                new_txt.append(format_change(change, pr_number, authors))
-            del changelogs[header]
+        line_header = line.lstrip(PREFIX)
+        if line.startswith(PREFIX):
+            if line_header not in valid_headers:
+                continue
+            for header in changelogs.copy():
+                if (valid_headers.index(header) <
+                    valid_headers.index(line_header)):
+                    # We reached a header after one we haven't processed,
+                    # meaning it isn't in the file, so add it.
+                    del new_txt[-1]
+                    new_txt.append(PREFIX + header)
+                    for change in changelogs[header]:
+                        new_txt.append(format_change(change, pr_number, authors))
+                    del changelogs[header]
+                    new_txt.append(line)
+                    continue
+
+            if line_header in changelogs:
+                for change in changelogs[line_header]:
+                    new_txt.append(format_change(change, pr_number, authors))
+                del changelogs[line_header]
+                continue
+
         if line == "## Authors":
             del new_txt[-1]
             # Keep the order from submodules.txt

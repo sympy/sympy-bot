@@ -44,6 +44,43 @@ def test_new_header():
 ## Authors
 """
 
+
+def test_insert_new_header():
+    notes = """\
+
+* core
+  * core change
+
+* solvers
+  * solvers change
+
+## Authors
+"""
+
+    # 'other' should stay last in submodules.txt
+    changelogs = {'sets': ['- sets change'], 'other': ['- other changes']}
+    authors = ['asmeurer']
+    pr_number = '123'
+
+    new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
+
+    assert new_notes == """\
+
+* core
+  * core change
+
+* sets
+  - sets change ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+
+* solvers
+  * solvers change
+
+* other
+  - other changes ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+
+## Authors
+""", new_notes
+
 def test_error():
     notes = ""
 
