@@ -53,9 +53,6 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
-    print(event.data['action'])
-    print(event.data['pull_request']['merged'])
-
     if event.data['pull_request']['state'] == "closed":
         print("PR", event.data['pull_request']['number'], "is closed, skipping")
         return
@@ -135,28 +132,38 @@ status check!
         context='sympy-bot/release-notes',
     ))
 
-    wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
+    return status, release_notes_file, changelogs
 
-    if (event.data['action'] == 'closed' and
-        event.data['pull_request']['merged'] == True):
-        if status:
-            try:
-                update_wiki(
-                    wiki_url=wiki_url,
-                    release_notes_file=release_notes_file,
-                    changelogs=changelogs,
-                    pr_number=number,
-                    authors=users,
-                )
-            except RuntimeError as e:
-                await error_comment(event, gh, e.args[0])
-                raise
-            except CalledProcessError as e:
-                await error_comment(event, gh, str(e))
-                raise
-        else:
-            message = "The pull request was merged even though the release notes bot had a failing status."
-            await error_comment(event, gh, message)
+@router.register("pull_request", action="closed")
+async def pull_request_closed(event, gh, *args, **kwargs):
+    if not event.data['pull_request']['merged']:
+        print("PR", event.data['pull_request']['number'], "was closed without merging, skipping")
+        return
+
+    status, release_notes_file, changelogs = await pull_request_edited(event, gh, *args, **kwargs)
+
+    wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
+    users = [event.data['pull_request']['head']['user']['login']]
+    number = event.data["pull_request"]["number"]
+
+    if status:
+        try:
+            update_wiki(
+                wiki_url=wiki_url,
+                release_notes_file=release_notes_file,
+                changelogs=changelogs,
+                pr_number=number,
+                authors=users,
+            )
+        except RuntimeError as e:
+            await error_comment(event, gh, e.args[0])
+            raise
+        except CalledProcessError as e:
+            await error_comment(event, gh, str(e))
+            raise
+    else:
+        message = "The pull request was merged even though the release notes bot had a failing status."
+        await error_comment(event, gh, message)
 
 async def error_comment(event, gh, message):
     """
