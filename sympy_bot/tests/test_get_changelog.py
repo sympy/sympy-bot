@@ -161,6 +161,6 @@ def test_multiline():
     assert status
     assert "good" in message
     assert changelogs == {
-        'solvers': ['* new trig solvers\n  ```\n  code\n  ```'],
+        'solvers': ['* new trig solvers\n\n  ```\n  code\n  ```'],
         'core': ['* core change'],
     }
