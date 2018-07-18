@@ -1,8 +1,10 @@
 import datetime
 import os
 import base64
-import subprocess
 import urllib
+import sys
+
+from subprocess import run as subprocess_run, CalledProcessError, PIPE
 
 from aiohttp import web, ClientSession
 
@@ -142,11 +144,12 @@ status check!
                     pr_number=number,
                     authors=users,
                 )
-            except (subprocess.CalledProcessError, RuntimeError) as e:
+            except (CalledProcessError, RuntimeError) as e:
                 await error_comment(event, gh, e.args[0])
         else:
             message = "The pull request was merged even though the release notes bot had a failing status."
             await error_comment(event, gh, message)
+
 async def error_comment(event, gh, message):
     """
     Add a new comment with an error message. For use when updating the release
@@ -177,9 +180,26 @@ The error message was: {message}
         context='sympy-bot/release-notes',
     ))
 
+# Modified from doctr.travis.run_command_hiding_token
+def run(args, token, shell=False, check=True):
+    if token:
+        stdout = stderr = PIPE
+    else:
+        stdout = stderr = None
+    p = subprocess_run(args, stdout=stdout, stderr=stderr, shell=shell, check=check)
+    if token:
+        # XXX: Do this in a way that is streaming
+        out, err = p.stdout, p.stderr
+        out = out.replace(token, b"~"*len(token))
+        err = err.replace(token, b"~"*len(token))
+        if out:
+            print(out.decode('utf-8'))
+        if err:
+            print(err.decode('utf-8'), file=sys.stderr)
+    return p.returncode
 
 def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
-    subprocess.run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
+    run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
     _, wiki = wiki_url.rsplit('/', 1)
     os.chdir(wiki)
 
@@ -192,14 +212,14 @@ def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors)
     with open(release_notes_file, 'w') as f:
         f.write(new_rel_notes_txt)
 
-    subprocess.run(['git', 'add', release_notes_file], check=True)
+    run(['git', 'add', release_notes_file], check=True)
 
     message = f"Update {release_notes_file} from PR #{pr_number}"
-    subprocess.run(['git', 'commit', '-m', message], check=True)
+    run(['git', 'commit', '-m', message], check=True)
 
     parsed_url = list(urllib.parse.parse_url(wiki_url))
     parsed_url[1] = os.environ.get("GH_AUTH") + '@' + parsed_url[1]
     auth_url = urllib.parse.urlunparse(parsed_url)
 
     # TODO: Use a deploy key to do this
-    subprocess.run(['git', 'push', auth_url], check=True)
+    run(['git', 'push', auth_url], check=True)
