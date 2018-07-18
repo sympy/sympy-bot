@@ -55,6 +55,9 @@ async def main_get(request):
 @router.register("pull_request", action="reopened")
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
+    await pull_request_comment(event, gh)
+
+async def pull_request_comment(event, gh):
     if event.data['pull_request']['state'] == "closed":
         print("PR", event.data['pull_request']['number'], "is closed, skipping")
         return
@@ -142,7 +145,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print("PR", event.data['pull_request']['number'], "was closed without merging, skipping")
         return
 
-    status, release_notes_file, changelogs = await pull_request_edited(event, gh, *args, **kwargs)
+    status, release_notes_file, changelogs = await pull_request_comment(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
     users = [event.data['pull_request']['head']['user']['login']]
