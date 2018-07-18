@@ -108,10 +108,20 @@ open an issue at https://github.com/sympy/sympy-bot/issues."""
 """
         wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
 
-        updated_fake_release_notes = update_release_notes(rel_notes_txt=fake_release_notes,
-            changelogs=changelogs, pr_number=number,
-            authors=users).replace('## Authors', '').strip()
-        message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
+        try:
+            updated_fake_release_notes = update_release_notes(rel_notes_txt=fake_release_notes,
+                changelogs=changelogs, pr_number=number,
+                authors=users).replace('## Authors', '').strip()
+        except Exception as e:
+            status = False
+            status_message = "ERROR"
+            message += f"""
+There was an error processing the release notes, which most likely indicates a
+bug in the bot. Please open an issue at
+https://github.com/sympy/sympy-bot/issues. The error was: {e}
+"""
+        else:
+            message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
 I am the SymPy bot. You have edited the pull request description.
@@ -243,8 +253,11 @@ def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number,
     with open(release_notes_file, 'r') as f:
         rel_notes_txt = f.read()
 
-    new_rel_notes_txt = update_release_notes(rel_notes_txt=rel_notes_txt,
+    try:
+        new_rel_notes_txt = update_release_notes(rel_notes_txt=rel_notes_txt,
         changelogs=changelogs, pr_number=pr_number, authors=authors)
+    except Exception as e:
+        raise RuntimeError(str(e)) from e
 
     with open(release_notes_file, 'w') as f:
         f.write(new_rel_notes_txt)
