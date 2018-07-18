@@ -58,13 +58,16 @@ def test_insert_new_header():
 """
 
     # 'other' should stay last in submodules.txt
-    changelogs = {'sets': ['- sets change'], 'other': ['- other changes']}
+    changelogs = {'sets': ['- sets change'], 'calculus': ['- calculus change'], 'other': ['- other changes']}
     authors = ['asmeurer']
     pr_number = '123'
 
     new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
     assert new_notes == """\
+
+* calculus
+  - calculus change ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 * core
   * core change

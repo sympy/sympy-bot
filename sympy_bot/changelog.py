@@ -169,7 +169,7 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
         if line.startswith(PREFIX):
             if line_header not in valid_headers:
                 continue
-            for header in changelogs.copy():
+            for header in sorted(changelogs, key=valid_headers.index):
                 if (valid_headers.index(header) <
                     valid_headers.index(line_header)):
                     # We reached a header after one we haven't processed,
