@@ -215,7 +215,11 @@ def run(args, shell=False, check=True):
     sys.stderr.flush()
     return p.returncode
 
-def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
+def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number,
+                authors):
+    run(['git', 'config', '--global', 'user.email', "sympy+bot@sympy.org"])
+    run(['git', 'config', '--global', 'user.name', "SymPy Bot"])
+
     run(['git', 'clone', wiki_url, '--depth', '1'], check=True)
     _, wiki = wiki_url.rsplit('/', 1)
     os.chdir(wiki)
