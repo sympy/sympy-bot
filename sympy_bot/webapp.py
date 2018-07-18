@@ -144,8 +144,10 @@ status check!
                     pr_number=number,
                     authors=users,
                 )
-            except (CalledProcessError, RuntimeError) as e:
+            except RuntimeError as e:
                 await error_comment(event, gh, e.args[0])
+            except CalledProcessError as e:
+                await error_comment(event, gh, str(e))
         else:
             message = "The pull request was merged even though the release notes bot had a failing status."
             await error_comment(event, gh, message)
