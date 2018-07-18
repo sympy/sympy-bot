@@ -53,6 +53,9 @@ async def main_get(request):
 
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
+    print(event.data['action'])
+    print(event.data['pull_request']['merged'])
+
     if event.data['pull_request']['state'] == "closed":
         print("PR", event.data['pull_request']['number'], "is closed, skipping")
         return
@@ -134,8 +137,6 @@ status check!
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
 
-    print(event.data['action'])
-    print(event.data['pull_request']['merged'])
     if (event.data['action'] == 'closed' and
         event.data['pull_request']['merged'] == True):
         if status:
