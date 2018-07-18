@@ -12,7 +12,7 @@ def test_existing_header():
     authors = ['asmeurer', 'certik']
     pr_number = '123'
 
-    new_notes12 = update_release_notes(notes12, changelogs, pr_number, authors)
+    new_notes12 = update_release_notes(rel_notes_txt=notes12, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
     assert new_notes12.splitlines()[114:119] == ['', '* core', '  - core change 1 ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Derivatives by a variable a symbolic number of times, like `diff(f(x), (x,']
 
@@ -31,7 +31,7 @@ def test_new_header():
     authors = ['asmeurer']
     pr_number = '123'
 
-    new_notes = update_release_notes(notes, changelogs, pr_number, authors)
+    new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
     assert new_notes == """\
 
@@ -52,7 +52,7 @@ def test_error():
     pr_number = '123'
 
     try:
-        update_release_notes(notes, changelogs, pr_number, authors)
+        update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
     except RuntimeError as e:
         assert "## Authors" in e.args[0]
     else:
