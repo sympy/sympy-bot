@@ -51,6 +51,8 @@ async def main_get(request):
 
     return web.Response(status=200, text=f"You have {remaining} of {total} GitHub API requests remaining. They will reset on {reset_datetime} (UTC), which is in {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.")
 
+@router.register("pull_request", action="opened")
+@router.register("pull_request", action="reopened")
 @router.register("pull_request", action="edited")
 async def pull_request_edited(event, gh, *args, **kwargs):
     if event.data['pull_request']['state'] == "closed":
