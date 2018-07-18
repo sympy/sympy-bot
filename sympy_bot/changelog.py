@@ -97,8 +97,6 @@ def get_changelog(pr_desc):
             else:
                 changelogs[header] # initialize the defaultdict
 
-        elif not line.strip():
-            continue
         else:
             if not header:
                 message_list += [
@@ -112,7 +110,7 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
-            if line.startswith('   ') and changelogs[header]:
+            if changelogs[header] and (not line or line.startswith('   ')):
                 # Multiline changelog
                 changelogs[header][-1] += '\n' + line[2:]
             else:
@@ -125,6 +123,12 @@ def get_changelog(pr_desc):
             status = False
 
     for header in changelogs:
+        # Clear "empty" changes
+        changes = []
+        for change in changelogs[header]:
+            if change.strip():
+                changes.append(change.strip())
+        changelogs[header] = changes
         if not changelogs[header]:
             message_list += [
                 'Invalid release notes entry for `%s`.' % header,
