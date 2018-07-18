@@ -228,6 +228,7 @@ def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors)
         f.write(new_rel_notes_txt)
 
     run(['git', 'add', release_notes_file], check=True)
+    run(['git', 'diff'], check=True)
 
     message = f"Update {release_notes_file} from PR #{pr_number}"
     run(['git', 'commit', '-m', message], check=True)
