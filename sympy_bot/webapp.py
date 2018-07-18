@@ -244,4 +244,4 @@ def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number,
     auth_url = urllib.parse.urlunparse(parsed_url)
 
     # TODO: Use a deploy key to do this
-    run(['git', 'push', auth_url], check=True)
+    run(['git', 'push', auth_url, 'master'], check=True)
