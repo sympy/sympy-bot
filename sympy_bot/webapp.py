@@ -133,6 +133,8 @@ status check!
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
 
+    print(event.data['action'])
+    print(event.data['pull_request']['merged'])
     if (event.data['action'] == 'closed' and
         event.data['pull_request']['merged'] == True):
         if status:
