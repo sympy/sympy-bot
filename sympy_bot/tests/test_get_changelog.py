@@ -129,3 +129,16 @@ def test_end_release_marker():
     assert status
     assert "good" in message
     assert changelogs == {'solvers': ['* new trig solvers']}
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+* core
+  * not a real change
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {'solvers': ['* new trig solvers']}
