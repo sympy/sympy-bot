@@ -5,7 +5,7 @@ import textwrap
 from collections import defaultdict
 
 PREFIX = '* '
-SUFFIX = ' ([#{pr_number}](../pull/{pr_number}) by {authors})\n'
+SUFFIX = '{indent}([#{pr_number}](../pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
 VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
 
@@ -157,11 +157,13 @@ def format_change(change, pr_number, authors):
         authors_info = ", ".join([AUTHOR.format(author=author) for author
             in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
 
+    indent = ' '
     if '\n' in change:
         change += '\n\n'
+        indent = '  '
 
-    return textwrap.indent(change + SUFFIX.format(pr_number=pr_number,
-        authors=authors_info), ' '*len(PREFIX))
+    return textwrap.indent(change + SUFFIX.format(indent=indent,
+        pr_number=pr_number, authors=authors_info), ' '*len(PREFIX))
 
 def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
     """

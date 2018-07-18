@@ -40,5 +40,5 @@ def test_format_change_multiline():
     code
     ```
 
-   ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+    ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
 """
