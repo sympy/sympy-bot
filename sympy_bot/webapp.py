@@ -18,6 +18,7 @@ router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
+BOT_VERSION = os.environ.get('HEROKU_RELEASE_VERSION', 'version not found!')
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -124,7 +125,7 @@ https://github.com/sympy/sympy-bot/issues. The error was: {e}
             message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
-I am the SymPy bot. You have edited the pull request description.
+I am the SymPy bot ({BOT_VERSION}). You have edited the pull request description.
 
 The status is **{status_message}**
 
