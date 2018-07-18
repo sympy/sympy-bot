@@ -142,3 +142,25 @@ def test_end_release_marker():
     assert status
     assert "good" in message
     assert changelogs == {'solvers': ['* new trig solvers']}
+
+def test_multiline():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+
+    ```
+    code
+    ```
+* core
+  * core change
+
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'solvers': ['* new trig solvers\n  ```\n  code\n  ```'],
+        'core': ['* core change'],
+    }

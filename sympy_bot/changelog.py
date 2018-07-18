@@ -112,7 +112,11 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
-            changelogs[header].append(line.strip())
+            if line.startswith('   ') and changelogs[header]:
+                # Multiline changelog
+                changelogs[header][-1] += '\n' + line[2:]
+            else:
+                changelogs[header].append(line.strip())
     else:
         if not changelogs:
             message_list += ['No release notes were detected. If there is no',
