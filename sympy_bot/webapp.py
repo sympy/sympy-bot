@@ -3,7 +3,7 @@ import os
 import base64
 import urllib
 import sys
-
+import shlex
 from subprocess import run as subprocess_run, CalledProcessError, PIPE
 
 from aiohttp import web, ClientSession
@@ -182,6 +182,15 @@ The error message was: {message}
 
 # Modified from doctr.travis.run_command_hiding_token
 def run(args, token, shell=False, check=True):
+    if not shell:
+        command = ' '.join(map(shlex.quote, args))
+    else:
+        command = args
+
+    command = command.replace(token.decode('utf-8'), '~'*len(token))
+    print(command)
+    sys.stdout.flush()
+
     if token:
         stdout = stderr = PIPE
     else:
