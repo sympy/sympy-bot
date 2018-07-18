@@ -211,6 +211,8 @@ def run(args, shell=False, check=True):
             print(out.decode('utf-8'))
         if err:
             print(err.decode('utf-8'), file=sys.stderr)
+    sys.stdout.flush()
+    sys.stderr.flush()
     return p.returncode
 
 def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number, authors):
