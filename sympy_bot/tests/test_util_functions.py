@@ -27,3 +27,18 @@ def test_format_change():
     authors = ['asmeurer', 'certik', 'sympy']
     assert format_change(change, pr_number,  authors) == \
         '  * modified some stuff ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer), [@certik](https://github.com/certik), and [@sympy](https://github.com/sympy))\n'
+
+def test_format_change_multiline():
+    change = '* new trig solvers\n\n  ```\n  code\n  ```'
+    authors = ['asmeurer']
+    pr_number = '123'
+
+    assert format_change(change, pr_number, authors) == """\
+  * new trig solvers
+
+    ```
+    code
+    ```
+
+   ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+"""

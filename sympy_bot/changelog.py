@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
-
+import textwrap
 from collections import defaultdict
 
 PREFIX = '* '
@@ -153,7 +153,11 @@ def format_change(change, pr_number, authors):
         authors_info = ", ".join([AUTHOR.format(author=author) for author
             in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
 
-    return ' '*len(PREFIX) + change + SUFFIX.format(pr_number=pr_number, authors=authors_info)
+    if '\n' in change:
+        change += '\n\n'
+
+    return textwrap.indent(change + SUFFIX.format(pr_number=pr_number,
+        authors=authors_info), ' '*len(PREFIX))
 
 def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
     """
