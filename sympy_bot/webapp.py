@@ -181,7 +181,9 @@ The error message was: {message}
     ))
 
 # Modified from doctr.travis.run_command_hiding_token
-def run(args, token, shell=False, check=True):
+def run(args, shell=False, check=True):
+    token = os.environ.get("GH_AUTH")
+
     if not shell:
         command = ' '.join(map(shlex.quote, args))
     else:
