@@ -78,7 +78,7 @@ def get_changelog(pr_desc):
                 else:
                     message_list += [
                         "%s is not a valid release notes header." % header,
-                        "Release notes headers should be SymPy submodule"
+                        "Release notes headers should be SymPy submodule",
                         "names, like",
                         "```",
                         "* core",
