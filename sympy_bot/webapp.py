@@ -59,6 +59,9 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         print("PR", event.data['pull_request']['number'], "is closed, skipping")
         return
 
+    await pull_request_comment(event, gh)
+
+async def pull_request_comment(event, gh):
     url = event.data["pull_request"]["comments_url"]
     number = event.data["pull_request"]["number"]
     # TODO: Get the full list of users with commits, not just the user who
@@ -142,7 +145,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print("PR", event.data['pull_request']['number'], "was closed without merging, skipping")
         return
 
-    status, release_notes_file, changelogs = await pull_request_edited(event, gh, *args, **kwargs)
+    status, release_notes_file, changelogs = await pull_request_comment(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
     users = [event.data['pull_request']['head']['user']['login']]
