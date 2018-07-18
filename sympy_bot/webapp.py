@@ -146,8 +146,10 @@ status check!
                 )
             except RuntimeError as e:
                 await error_comment(event, gh, e.args[0])
+                raise
             except CalledProcessError as e:
                 await error_comment(event, gh, str(e))
+                raise
         else:
             message = "The pull request was merged even though the release notes bot had a failing status."
             await error_comment(event, gh, message)
