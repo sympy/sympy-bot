@@ -24,18 +24,18 @@ sympy-bot Heroku app). You can also see the logs on
 Next you need to set up the bot on GitHub. To do so, follow these steps:
 
 1. Go to the webhooks settings (for instance, at
-  https://github.com/sympy/sympy/settings/hooks), and create a new webhook.
+   https://github.com/sympy/sympy/settings/hooks), and create a new webhook.
 
-  - Set the payload URL to the Heroku app url (for instance,
-    https://sympy-bot.herokuapp.com/)
-  - Set the content type to `application/json`
-  - Generate a random password for the secret. I used the keychain app on my
-    Mac to generate a 20 character password with random characters. Save this
-    secret, as you will need to enter it in Heroku as well.
-  - Under "Which events would you like to trigger this webhook?" select "Let
-    me select individual events.". Then make sure only **Pull requests** is
-    checked.
-  - Make sure **Active** is checked
+   - Set the payload URL to the Heroku app url (for instance,
+     https://sympy-bot.herokuapp.com/)
+   - Set the content type to `application/json`
+   - Generate a random password for the secret. I used the keychain app on my
+     Mac to generate a 20 character password with random characters. Save this
+     secret, as you will need to enter it in Heroku as well.
+   - Under "Which events would you like to trigger this webhook?" select "Let
+     me select individual events.". Then make sure only **Pull requests** is
+     checked.
+   - Make sure **Active** is checked
 
 2. Go to Heroku and under the settings UI (e.g.,
    https://dashboard.heroku.com/apps/sympy-bot/settings), create two config
