@@ -1,3 +1,4 @@
+import textwrap
 import datetime
 import os
 import base64
@@ -141,6 +142,10 @@ https://github.com/sympy/sympy-bot/issues. The error was: {e}
 Hi, I am the SymPy bot ({BOT_VERSION}). I'm here to make sure this pull
 request has a release notes entry. Please read the [guide on how to write
 release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+<details>
+    <summary>Click here to see the pull request description that was parsed.</summary>
+{textwrap.indent(event.data['pull_request']['body']), '    '}
+</details><p>
 
 """
     if not status:
@@ -152,6 +157,7 @@ release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 Note: This comment will be updated with the latest check if you edit the pull
 request. You need to reload the page to see it.
+
 """
 
     if existing_comment:
