@@ -58,8 +58,14 @@ async def main_get(request):
 @router.register("pull_request", action="edited")
 @router.register("pull_request", action="synchronize")
 async def pull_request_edited(event, gh, *args, **kwargs):
+    pr_number = event.data['pull_request']['number']
     if event.data['pull_request']['state'] == "closed":
-        print("PR", event.data['pull_request']['number'], "is closed, skipping")
+        print(f"PR #{pr_number} is closed, skipping")
+        return
+
+    if (event.data['pull_request']['base']['repo']['full_name'] ==
+        'sympy/sympy' and pr_number != 14942):
+        print(f"SymPy PR #{pr_number} isn't #14942, skipping.")
         return
 
     await pull_request_comment(event, gh)
@@ -195,8 +201,14 @@ requests left. They will reset on {reset_datetime} (UTC), which is in
 
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
+    pr_number = event.data['pull_request']['number']
     if not event.data['pull_request']['merged']:
-        print("PR", event.data['pull_request']['number'], "was closed without merging, skipping")
+        print("PR", pr_number, "was closed without merging, skipping")
+        return
+
+    if (event.data['pull_request']['base']['repo']['full_name'] ==
+        'sympy/sympy' and pr_number != 14942):
+        print(f"SymPy PR #{pr_number} isn't #14942, skipping.")
         return
 
     status, release_notes_file, changelogs = await pull_request_comment(event, gh, *args, **kwargs)
