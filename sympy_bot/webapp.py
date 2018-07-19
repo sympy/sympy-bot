@@ -159,12 +159,13 @@ status check!
     total = rate_limit.limit
     reset_datetime = rate_limit.reset_datetime
 
-    if remaining <= 10000:
+    if remaining <= 10:
         message = f"""\
 
-WARNING: I am nearing my API limit. I have only {remaining} of {total} API
+**WARNING**: I am nearing my API limit. I have only {remaining} of {total} API
 requests left. They will reset on {reset_datetime} (UTC), which is in
 {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
+
         """
 
         comment = await gh.post(comments_url, data={"body": message})
