@@ -56,6 +56,7 @@ async def main_get(request):
 @router.register("pull_request", action="opened")
 @router.register("pull_request", action="reopened")
 @router.register("pull_request", action="edited")
+@router.register("pull_request", action="synchronize")
 async def pull_request_edited(event, gh, *args, **kwargs):
     if event.data['pull_request']['state'] == "closed":
         print("PR", event.data['pull_request']['number'], "is closed, skipping")
