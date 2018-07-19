@@ -63,7 +63,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     await pull_request_comment(event, gh)
 
 async def pull_request_comment(event, gh):
-    url = event.data["pull_request"]["comments_url"]
+    comments_url = event.data["pull_request"]["comments_url"]
     number = event.data["pull_request"]["number"]
     # TODO: Get the full list of users with commits, not just the user who
     # opened the PR.
@@ -78,7 +78,7 @@ async def pull_request_comment(event, gh):
 
     version_url = contents_url.replace('{+path}', RELEASE_FILE)
 
-    comments = gh.getiter(url)
+    comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
     existing_comment = None
     async for comment in comments:
@@ -144,7 +144,7 @@ status check!
     if existing_comment:
         comment = await gh.patch(existing_comment['url'], data={"body": PR_message})
     else:
-        comment = await gh.post(url, data={"body": PR_message})
+        comment = await gh.post(comments_url, data={"body": PR_message})
 
     statuses_url = event.data['pull_request']['statuses_url']
     await gh.post(statuses_url, data=dict(
@@ -153,6 +153,21 @@ status check!
         description=status_message,
         context='sympy-bot/release-notes',
     ))
+
+    rate_limit = gh.rate_limit
+    remaining = rate_limit.remaining
+    total = rate_limit.limit
+    reset_datetime = rate_limit.reset_datetime
+
+    if remaining <= 10000:
+        message = f"""\
+
+WARNING: I am nearing my API limit. I have only {remaining} of {total} API
+requests left. They will reset on {reset_datetime} (UTC), which is in
+{reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
+        """
+
+        comment = await gh.post(url, data={"body": message})
 
     return status, release_notes_file, changelogs
 
