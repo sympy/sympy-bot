@@ -189,11 +189,12 @@ request. You need to reload the page to see it.
     if remaining <= 10:
         message = f"""\
 
-**WARNING**: I am nearing my API limit. I have only {remaining} of {total} API
-requests left. They will reset on {reset_datetime} (UTC), which is in
-{reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
+**:warning::warning::warning:WARNING:warning::warning::warning:**: I am
+nearing my API limit. I have only {remaining} of {total} API requests left.
+They will reset on {reset_datetime} (UTC), which is in {reset_datetime -
+datetime.datetime.now(datetime.timezone.utc)}.
 
-        """
+"""
 
         comment = await gh.post(comments_url, data={"body": message})
 
@@ -245,8 +246,10 @@ async def error_comment(event, gh, message):
     message = message.replace(token, '~~~TOKEN~~~')
 
     error_message = f"""\
-Warning: there was an error automatically updating the release notes. Normally
-it should not have been possible to merge this pull request. You might want to
+
+**:rotating_light::rotating_light::rotating_light:ERROR:rotating_light::rotating_light::rotating_light:**
+There was an error automatically updating the release notes. Normally it
+should not have been possible to merge this pull request. You might want to
 open an issue about this at https://github.com/sympy/sympy-bot/issues.
 
 In the meantime, you will need to update the release notes on the wiki
