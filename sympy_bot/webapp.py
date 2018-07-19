@@ -143,9 +143,7 @@ request has a release notes entry. Please read the [guide on how to write
 release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 """
-    if status:
-        PR_message += "It looks like the release notes are formatted correctly."
-    else:
+    if not status:
         PR_message += "There was an issue with the release notes."
 
     PR_message += f"""
