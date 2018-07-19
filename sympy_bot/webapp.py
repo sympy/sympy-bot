@@ -167,7 +167,7 @@ requests left. They will reset on {reset_datetime} (UTC), which is in
 {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
         """
 
-        comment = await gh.post(url, data={"body": message})
+        comment = await gh.post(comments_url, data={"body": message})
 
     return status, release_notes_file, changelogs
 
