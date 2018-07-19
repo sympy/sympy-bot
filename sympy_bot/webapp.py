@@ -144,7 +144,7 @@ request has a release notes entry. Please read the [guide on how to write
 release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 <details>
     <summary>Click here to see the pull request description that was parsed.</summary>
-{textwrap.indent(event.data['pull_request']['body']), '    '}
+{textwrap.indent(event.data['pull_request']['body'], '    ')}
 </details><p>
 
 """
