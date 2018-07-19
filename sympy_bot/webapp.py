@@ -150,8 +150,8 @@ release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 {message}
 
-**Note: If you edit the pull request description, you need to reload the page
-to see my latest status check!**
+Note: This comment will be updated with the latest check if you edit the pull
+request. You need to reload the page to see it.
 """
 
     if existing_comment:
