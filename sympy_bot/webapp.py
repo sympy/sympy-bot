@@ -148,7 +148,7 @@ release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
     else:
         PR_message += "There was an issue with the release notes."
 
-    PR_message += """
+    PR_message += f"""
 
 {message}
 
