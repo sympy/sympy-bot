@@ -107,7 +107,12 @@ open an issue at https://github.com/sympy/sympy-bot/issues."""
             version = m.group()
             release_notes_file = get_release_notes_filename(version)
 
-    status_message = "OK" if status else "NO GOOD"
+    status_message = "Release notes look OK" if status else "Release notes check failed"
+
+    emoji_status = {
+        True: ':white_check_mark:',
+        False: ':x:',
+        }
 
     if status:
         fake_release_notes = """
@@ -131,14 +136,23 @@ https://github.com/sympy/sympy-bot/issues. The error was: {e}
             message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
-I am the SymPy bot ({BOT_VERSION}). You have edited the pull request description.
+{emoji_status[status]}
+Hi, I am the SymPy bot ({BOT_VERSION}). I'm here to make sure this pull
+request has a release notes entry. Please read the [guide on how to write
+release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes)
 
-The status is **{status_message}**
+"""
+    if status:
+        PR_message += "It looks like the release notes are formatted correctly."
+    else:
+        PR_message += "There was an issue with the release notes."
+
+    PR_message += """
 
 {message}
 
-If you edit the description, be sure to reload the page to see my latest
-status check!
+**Note: If you edit the pull request description, you need to reload the page
+to see my latest status check!**
 """
 
     if existing_comment:
@@ -216,7 +230,7 @@ Warning: there was an error automatically updating the release notes. Normally
 it should not have been possible to merge this pull request. You might want to
 open an issue about this at https://github.com/sympy/sympy-bot/issues.
 
-In the mean time, you will need to update the release notes on the wiki
+In the meantime, you will need to update the release notes on the wiki
 manually.
 
 The error message was: {message}
