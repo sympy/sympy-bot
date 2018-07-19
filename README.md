@@ -60,3 +60,9 @@ Run
 
 to enable the bot version environment variable (run this if the version is
 "version not found!").
+
+## Testing
+
+There is a testing deploy set up at
+https://dashboard.heroku.com/apps/sympy-bot-testing. Currently it is
+configured to run on https://github.com/asmeurer/GitHub-Issues-Test.
