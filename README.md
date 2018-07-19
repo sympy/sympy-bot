@@ -9,7 +9,9 @@ This is a GitHub bot for SymPy. It is run by the
 good on how to set up Heroku and write GitHub bots. This bot is based on it.
 
 The bot is tied to Heroku, so any push to this repo is automatically deployed
-there. The Heroky dashboard is at https://dashboard.heroku.com/apps/sympy-bot
+there (it is currently configured to not deploy until the
+[Travis](https://travis-ci.org/sympy/sympy-bot) tests pass). The Heroku
+dashboard is at https://dashboard.heroku.com/apps/sympy-bot
 
 If the bot stops working, look at the logs with
 
