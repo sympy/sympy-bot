@@ -63,8 +63,6 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         print(f"PR #{pr_number} is closed, skipping")
         return
 
-    print(event.data['pull_request']['base']['repo']['full_name'])
-
     if (event.data['pull_request']['base']['repo']['full_name'] ==
         'sympy/sympy' and pr_number != 14942):
         print(f"SymPy PR #{pr_number} isn't #14942, skipping.")
@@ -208,7 +206,6 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print("PR", pr_number, "was closed without merging, skipping")
         return
 
-    print(event.data['pull_request']['base']['repo']['full_name'])
     if (event.data['pull_request']['base']['repo']['full_name'] ==
         'sympy/sympy' and pr_number != 14942):
         print(f"SymPy PR #{pr_number} isn't #14942, skipping.")
