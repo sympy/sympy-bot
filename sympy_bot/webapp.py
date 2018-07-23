@@ -141,6 +141,7 @@ There was an error processing the release notes, which most likely indicates a b
 """
         else:
             if changelogs:
+                print("changelogs:", changelogs)
                 message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
