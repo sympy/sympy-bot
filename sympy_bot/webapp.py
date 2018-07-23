@@ -114,7 +114,7 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
             version = m.group()
             release_notes_file = get_release_notes_filename(version)
 
-    status_message = "Release notes look OK" if status else "Release notes check failed"
+    status_message = "The release notes look OK" if status else "The release notes check failed"
 
     emoji_status = {
         True: ':white_check_mark:',
