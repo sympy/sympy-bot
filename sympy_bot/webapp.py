@@ -104,8 +104,7 @@ async def pull_request_comment(event, gh):
             status = False
             gh_status = 'error'
             message = f"""\
-There was an error getting the version from the `{RELEASE_FILE}` file. Please
-open an issue at https://github.com/sympy/sympy-bot/issues."""
+There was an error getting the version from the `{RELEASE_FILE}` file. Please open an issue at https://github.com/sympy/sympy-bot/issues."""
         else:
             version = m.group()
             release_notes_file = get_release_notes_filename(version)
@@ -131,9 +130,9 @@ open an issue at https://github.com/sympy/sympy-bot/issues."""
             status = False
             status_message = "ERROR"
             message += f"""
-There was an error processing the release notes, which most likely indicates a
-bug in the bot. Please open an issue at
-https://github.com/sympy/sympy-bot/issues. The error was: {e}
+
+There was an error processing the release notes, which most likely indicates a bug in the bot. Please open an issue at https://github.com/sympy/sympy-bot/issues. The error was: {e}
+
 """
         else:
             message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
@@ -141,12 +140,7 @@ https://github.com/sympy/sympy-bot/issues. The error was: {e}
     PR_message = f"""\
 {emoji_status[status]}
 
-Hi, I am the [SymPy bot](git@github.com:sympy/sympy-bot.git) ({BOT_VERSION}).
-I'm here to make sure this pull request has a release notes entry. Please read
-the [guide on how to write release
-notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
-<details><summary>Click here to see the pull request description that was
-parsed.</summary>
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to make sure this pull request has a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes). <details><summary>Click here to see the pull request description that was parsed.</summary>
 
 {textwrap.indent(event.data['pull_request']['body'], '    ')}
 
@@ -160,8 +154,7 @@ parsed.</summary>
 
 {message}
 
-Note: This comment will be updated with the latest check if you edit the pull
-request. You need to reload the page to see it.
+Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it.
 
 """
 
@@ -186,10 +179,7 @@ request. You need to reload the page to see it.
     if remaining <= 10:
         message = f"""\
 
-**:warning::warning::warning:WARNING:warning::warning::warning:**: I am
-nearing my API limit. I have only {remaining} of {total} API requests left.
-They will reset on {reset_datetime} (UTC), which is in {reset_datetime -
-datetime.datetime.now(datetime.timezone.utc)}.
+**:warning::warning::warning:WARNING:warning::warning::warning:**: I am nearing my API limit. I have only {remaining} of {total} API requests left. They will reset on {reset_datetime} (UTC), which is in {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
 
 """
 
@@ -239,13 +229,9 @@ async def error_comment(event, gh, message):
 
     error_message = f"""\
 
-**:rotating_light::rotating_light::rotating_light:ERROR:rotating_light::rotating_light::rotating_light:**
-There was an error automatically updating the release notes. Normally it
-should not have been possible to merge this pull request. You might want to
-open an issue about this at https://github.com/sympy/sympy-bot/issues.
+**:rotating_light::rotating_light::rotating_light:ERROR:rotating_light::rotating_light::rotating_light:** There was an error automatically updating the release notes. Normally it should not have been possible to merge this pull request. You might want to open an issue about this at https://github.com/sympy/sympy-bot/issues.
 
-In the meantime, you will need to update the release notes on the wiki
-manually.
+In the meantime, you will need to update the release notes on the wiki manually.
 
 The error message was: {message}
 """

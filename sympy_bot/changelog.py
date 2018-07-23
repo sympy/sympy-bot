@@ -65,8 +65,7 @@ def get_changelog(pr_desc):
                 if ' ' in header:
                     # Most likely just forgot the header
                     message_list += [
-                        "Release notes must include a header.",
-                        "Please use the submodule name as the header, like",
+                        "Release notes must include a header. Please use the submodule name as the header, like",
                         "```",
                         "* core",
                         "  * made Add faster",
@@ -77,9 +76,8 @@ def get_changelog(pr_desc):
                     ]
                 else:
                     message_list += [
-                        "%s is not a valid release notes header." % header,
-                        "Release notes headers should be SymPy submodule",
-                        "names, like",
+                        "%s is not a valid release notes header. Release notes headers should be SymPy submodule names, like" % header,
+                        "",
                         "```",
                         "* core",
                         "  * made Add faster",
@@ -89,9 +87,7 @@ def get_changelog(pr_desc):
                         "```",
                         "or `other`.",
                         "",
-                        "If you have added a new submodule, please add it to",
-                        "the list of valid release notes headers at",
-                        "https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
+                        "If you have added a new submodule, please add it to the list of valid release notes headers at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
                     ]
 
             else:
@@ -100,8 +96,7 @@ def get_changelog(pr_desc):
         else:
             if not header:
                 message_list += [
-                    'No subheader found. Please add a header for',
-                    'the module, for example,',
+                    'No subheader found. Please add a header for the module, for example,',
                     '',
                     '```',
                     '* solvers',
@@ -117,9 +112,7 @@ def get_changelog(pr_desc):
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
-            message_list += ['No release notes were detected. If there is no',
-                             'release notes entry, please write `NO ENTRY` in the',
-                             'PR description under `<!-- BEGIN RELEASE NOTES -->`.']
+            message_list += ['No release notes were detected. If there is no release notes entry, please write `NO ENTRY` in the PR description under `<!-- BEGIN RELEASE NOTES -->`.']
             status = False
 
     for header in changelogs:
@@ -131,8 +124,7 @@ def get_changelog(pr_desc):
         changelogs[header] = changes
         if not changelogs[header]:
             message_list += [
-                'Invalid release notes entry for `%s`.' % header,
-                'Make sure it has a release notes entry under it.',
+                'Invalid release notes entry for `%s`. Make sure it has a release notes entry under it.'  % header,
             ]
             status = False
     if not message_list:
