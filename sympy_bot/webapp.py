@@ -75,7 +75,11 @@ async def pull_request_comment(event, gh):
     commits = gh.getiter(commits_url)
     users = set()
     async for commit in commits:
-        users.add(commit['author']['login'])
+        if commit['author']:
+            users.add(commit['author']['login'])
+
+    if not users:
+        users = {event.data['pull_request']['head']['user']['login']}
 
     users = sorted(users)
     contents_url = event.data['pull_request']['base']['repo']['contents_url']
