@@ -141,10 +141,12 @@ https://github.com/sympy/sympy-bot/issues. The error was: {e}
     PR_message = f"""\
 {emoji_status[status]}
 
-Hi, I am the SymPy bot ({BOT_VERSION}). I'm here to make sure this pull
-request has a release notes entry. Please read the [guide on how to write
-release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
-<details><summary>Click here to see the pull request description that was parsed.</summary>
+Hi, I am the [SymPy bot](git@github.com:sympy/sympy-bot.git) ({BOT_VERSION}).
+I'm here to make sure this pull request has a release notes entry. Please read
+the [guide on how to write release
+notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+<details><summary>Click here to see the pull request description that was
+parsed.</summary>
 
 {textwrap.indent(event.data['pull_request']['body'], '    ')}
 
