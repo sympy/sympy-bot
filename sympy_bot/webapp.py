@@ -59,6 +59,7 @@ async def main_get(request):
 @router.register("pull_request", action="synchronize")
 async def pull_request_edited(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
+    print(f"Got {event.event} from PR #{pr_number}.")
     if event.data['pull_request']['state'] == "closed":
         print(f"PR #{pr_number} is closed, skipping")
         return
@@ -190,6 +191,7 @@ Note: This comment will be updated with the latest check if you edit the pull re
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
+    print(f"Got {event.event} from PR #{pr_number}.")
     if not event.data['pull_request']['merged']:
         print("PR", pr_number, "was closed without merging, skipping")
         return
