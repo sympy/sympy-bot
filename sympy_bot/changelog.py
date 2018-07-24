@@ -73,6 +73,8 @@ def get_changelog(pr_desc):
                         "* printing",
                         "  * improve LaTeX printing of fractions",
                         "```",
+                        "",
+                        "See [here](https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt) for a list of valid release notes headers.",
                     ]
                 else:
                     message_list += [
