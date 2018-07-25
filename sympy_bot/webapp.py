@@ -59,6 +59,7 @@ async def main_get(request):
 @router.register("pull_request", action="synchronize")
 async def pull_request_edited(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
+    print(f"PR #{pr_number} was {event.data['action']}.")
     if event.data['pull_request']['state'] == "closed":
         print(f"PR #{pr_number} is closed, skipping")
         return
@@ -74,7 +75,11 @@ async def pull_request_comment(event, gh):
     commits = gh.getiter(commits_url)
     users = set()
     async for commit in commits:
-        users.add(commit['author']['login'])
+        if commit['author']:
+            users.add(commit['author']['login'])
+
+    if not users:
+        users = {event.data['pull_request']['head']['user']['login']}
 
     users = sorted(users)
     contents_url = event.data['pull_request']['base']['repo']['contents_url']
@@ -104,13 +109,12 @@ async def pull_request_comment(event, gh):
             status = False
             gh_status = 'error'
             message = f"""\
-There was an error getting the version from the `{RELEASE_FILE}` file. Please
-open an issue at https://github.com/sympy/sympy-bot/issues."""
+There was an error getting the version from the `{RELEASE_FILE}` file. Please open an issue at https://github.com/sympy/sympy-bot/issues."""
         else:
             version = m.group()
             release_notes_file = get_release_notes_filename(version)
 
-    status_message = "Release notes look OK" if status else "Release notes check failed"
+    status_message = "The release notes look OK" if status else "The release notes check failed"
 
     emoji_status = {
         True: ':white_check_mark:',
@@ -131,20 +135,18 @@ open an issue at https://github.com/sympy/sympy-bot/issues."""
             status = False
             status_message = "ERROR"
             message += f"""
-There was an error processing the release notes, which most likely indicates a
-bug in the bot. Please open an issue at
-https://github.com/sympy/sympy-bot/issues. The error was: {e}
+
+There was an error processing the release notes, which most likely indicates a bug in the bot. Please open an issue at https://github.com/sympy/sympy-bot/issues. The error was: {e}
+
 """
         else:
-            message += f'\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
+            if changelogs:
+                message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
 
     PR_message = f"""\
 {emoji_status[status]}
 
-Hi, I am the SymPy bot ({BOT_VERSION}). I'm here to make sure this pull
-request has a release notes entry. Please read the [guide on how to write
-release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
-<details><summary>Click here to see the pull request description that was parsed.</summary>
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to make sure this pull request has a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes). <details><summary>Click here to see the pull request description that was parsed.</summary>
 
 {textwrap.indent(event.data['pull_request']['body'], '    ')}
 
@@ -158,8 +160,7 @@ release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 {message}
 
-Note: This comment will be updated with the latest check if you edit the pull
-request. You need to reload the page to see it.
+Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it.
 
 """
 
@@ -184,10 +185,7 @@ request. You need to reload the page to see it.
     if remaining <= 10:
         message = f"""\
 
-**:warning::warning::warning:WARNING:warning::warning::warning:**: I am
-nearing my API limit. I have only {remaining} of {total} API requests left.
-They will reset on {reset_datetime} (UTC), which is in {reset_datetime -
-datetime.datetime.now(datetime.timezone.utc)}.
+**:warning::warning::warning:WARNING:warning::warning::warning:**: I am nearing my API limit. I have only {remaining} of {total} API requests left. They will reset on {reset_datetime} (UTC), which is in {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
 
 """
 
@@ -198,6 +196,7 @@ datetime.datetime.now(datetime.timezone.utc)}.
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
+    print(f"PR #{pr_number} was {event.data['action']}.")
     if not event.data['pull_request']['merged']:
         print("PR", pr_number, "was closed without merging, skipping")
         return
@@ -209,28 +208,28 @@ async def pull_request_closed(event, gh, *args, **kwargs):
     number = event.data["pull_request"]["number"]
 
     if status:
-        try:
-            update_wiki(
-                wiki_url=wiki_url,
-                release_notes_file=release_notes_file,
-                changelogs=changelogs,
-                pr_number=number,
-                authors=users,
-            )
-            update_message = comment['body'] + f"""
+        if changelogs:
+            try:
+                update_wiki(
+                    wiki_url=wiki_url,
+                    release_notes_file=release_notes_file,
+                    changelogs=changelogs,
+                    pr_number=number,
+                    authors=users,
+                )
+                update_message = comment['body'] + f"""
 
 **Update**
 
 The release notes on the [wiki]({wiki_url}) have been updated.
-
 """
-            comment = await gh.post(comment['url'], data={"body": update_message})
-        except RuntimeError as e:
-            await error_comment(event, gh, e.args[0])
-            raise
-        except CalledProcessError as e:
-            await error_comment(event, gh, str(e))
-            raise
+                comment = await gh.post(comment['url'], data={"body": update_message})
+            except RuntimeError as e:
+                await error_comment(event, gh, e.args[0])
+                raise
+            except CalledProcessError as e:
+                await error_comment(event, gh, str(e))
+                raise
     else:
         message = "The pull request was merged even though the release notes bot had a failing status."
         await error_comment(event, gh, message)
@@ -245,13 +244,9 @@ async def error_comment(event, gh, message):
 
     error_message = f"""\
 
-**:rotating_light::rotating_light::rotating_light:ERROR:rotating_light::rotating_light::rotating_light:**
-There was an error automatically updating the release notes. Normally it
-should not have been possible to merge this pull request. You might want to
-open an issue about this at https://github.com/sympy/sympy-bot/issues.
+**:rotating_light::rotating_light::rotating_light:ERROR:rotating_light::rotating_light::rotating_light:** There was an error automatically updating the release notes. Normally it should not have been possible to merge this pull request. You might want to open an issue about this at https://github.com/sympy/sympy-bot/issues.
 
-In the meantime, you will need to update the release notes on the wiki
-manually.
+In the meantime, you will need to update the release notes on the wiki manually.
 
 The error message was: {message}
 """
