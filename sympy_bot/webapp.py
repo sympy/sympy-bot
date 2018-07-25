@@ -193,7 +193,7 @@ datetime.datetime.now(datetime.timezone.utc)}.
 
         comment = await gh.post(comments_url, data={"body": message})
 
-    return status, release_notes_file, changelogs
+    return status, release_notes_file, changelogs, comment
 
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
@@ -202,7 +202,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print("PR", pr_number, "was closed without merging, skipping")
         return
 
-    status, release_notes_file, changelogs = await pull_request_comment(event, gh, *args, **kwargs)
+    status, release_notes_file, changelogs, comment = await pull_request_comment(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
     users = [event.data['pull_request']['head']['user']['login']]
@@ -217,6 +217,14 @@ async def pull_request_closed(event, gh, *args, **kwargs):
                 pr_number=number,
                 authors=users,
             )
+            update_message = comment['body'] + f"""
+
+**Update**
+
+The release notes on the [wiki]({wiki_url}) have been updated.
+
+"""
+            comment = await gh.post(comment['url'], data={"body": update_message})
         except RuntimeError as e:
             await error_comment(event, gh, e.args[0])
             raise
