@@ -44,7 +44,7 @@ Next you need to set up the bot on GitHub. To do so, follow these steps:
    - `GH_SECRET`: set this to the secret you created in step 1 above
    - `GH_AUTH`: set this to the personal access token for the `sympy-bot`
      user. If you don't have this or need to regenerate it, login as the bot
-     user and go to the personal access token settings (for instance, at
+     user and go to the personal access token settings (at
      https://github.com/settings/tokens), and create a new token. **VERY
      IMPORTANT:** Give the token `public_repo` access only.
 
