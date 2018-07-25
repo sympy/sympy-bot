@@ -198,7 +198,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
     print(f"PR #{pr_number} was {event.data['action']}.")
     if not event.data['pull_request']['merged']:
-        print("PR", pr_number, "was closed without merging, skipping")
+        print(f"PR #{pr_number} was closed without merging, skipping")
         return
 
     status, release_notes_file, changelogs, comment = await pull_request_comment(event, gh, *args, **kwargs)
