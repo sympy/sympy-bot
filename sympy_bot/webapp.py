@@ -125,7 +125,7 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
         fake_release_notes = """
 ## Authors
 """
-        wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
+        release_notes_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
 
         try:
             updated_fake_release_notes = update_release_notes(rel_notes_txt=fake_release_notes,
@@ -141,7 +141,7 @@ There was an error processing the release notes, which most likely indicates a b
 """
         else:
             if changelogs:
-                message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {wiki_url}.'
+                message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {release_notes_url}.'
 
     PR_message = f"""\
 {emoji_status[status]}
@@ -191,7 +191,7 @@ Note: This comment will be updated with the latest check if you edit the pull re
 
         comment = await gh.post(comments_url, data={"body": message})
 
-    return status, release_notes_file, changelogs
+    return status, release_notes_file, changelogs, comment
 
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
@@ -201,9 +201,11 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print("PR", pr_number, "was closed without merging, skipping")
         return
 
-    status, release_notes_file, changelogs = await pull_request_comment(event, gh, *args, **kwargs)
+    status, release_notes_file, changelogs, comment = await pull_request_comment(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
+    release_notes_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
+
     users = [event.data['pull_request']['head']['user']['login']]
     number = event.data["pull_request"]["number"]
 
@@ -217,6 +219,13 @@ async def pull_request_closed(event, gh, *args, **kwargs):
                     pr_number=number,
                     authors=users,
                 )
+                update_message = comment['body'] + f"""
+
+**Update**
+
+The release notes on the [wiki]({release_notes_url}) have been updated.
+"""
+                comment = await gh.post(comment['url'], data={"body": update_message})
             except RuntimeError as e:
                 await error_comment(event, gh, e.args[0])
                 raise
