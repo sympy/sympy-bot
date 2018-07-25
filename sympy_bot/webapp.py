@@ -232,6 +232,8 @@ The release notes on the [wiki]({release_notes_url}) have been updated.
             except CalledProcessError as e:
                 await error_comment(event, gh, str(e))
                 raise
+        else:
+            print(f"PR #{pr_number} was merged with no change log entries.")
     else:
         message = "The pull request was merged even though the release notes bot had a failing status."
         await error_comment(event, gh, message)
