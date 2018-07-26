@@ -5,7 +5,7 @@ python:
   - 3.6
 
 install:
-  - pip install pyflakes pytest
+  - pip install pyflakes pytest gidgethub aiohttp requests
 
 script:
   - pyflakes .
