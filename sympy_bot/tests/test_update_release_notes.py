@@ -97,3 +97,45 @@ def test_error():
         assert "## Authors" in e.args[0]
     else:
         raise AssertionError("Did not raise")
+
+def test_multiline_indent():
+    # See test_multiple_multiline() in test_get_changelogs.py and issue #14.
+    # This is from sympy/sympy#14758.
+    pr_number = '14758'
+    authors = ['NikhilPappu']
+    notes = "## Authors"
+
+    changelogs = {
+        'parsing': [
+            '* Added a submodule autolev which can be used to parse Autolev code to SymPy code.',
+        ],
+        'physics.mechanics': [
+            '* Added a center of mass function in functions.py which returns the position vector of the center of\n  mass of a system of bodies.',
+            "* Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in\n   to prevent errors which shouldn't occur).",
+        ],
+        'physics.vector': [
+            "* Changed _w_diff_dcm in frame.py to get the correct results.",
+        ],
+    }
+
+    assert update_release_notes(rel_notes_txt=notes, changelogs=changelogs,
+    pr_number=pr_number, authors=authors) == """\
+* parsing
+  * Added a submodule autolev which can be used to parse Autolev code to SymPy code. ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+
+* physics.mechanics
+  * Added a center of mass function in functions.py which returns the position vector of the center of
+    mass of a system of bodies.
+
+    ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+
+  * Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in
+     to prevent errors which shouldn't occur).
+
+    ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+
+* physics.vector
+  * Changed _w_diff_dcm in frame.py to get the correct results. ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+
+## Authors
+"""

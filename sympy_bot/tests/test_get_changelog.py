@@ -164,3 +164,34 @@ def test_multiline():
         'solvers': ['* new trig solvers\n\n  ```\n  code\n  ```'],
         'core': ['* core change'],
     }
+
+def test_multiple_multiline():
+    # from sympy/sympy#14758, see #14
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* parsing
+    * Added a submodule autolev which can be used to parse Autolev code to SymPy code.
+* physics.mechanics
+    * Added a center of mass function in functions.py which returns the position vector of the center of
+      mass of a system of bodies.
+    * Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in
+       to prevent errors which shouldn't occur).
+* physics.vector
+    * Changed _w_diff_dcm in frame.py to get the correct results.
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'parsing': [
+            '* Added a submodule autolev which can be used to parse Autolev code to SymPy code.',
+        ],
+        'physics.mechanics': [
+            '* Added a center of mass function in functions.py which returns the position vector of the center of\n  mass of a system of bodies.',
+            "* Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in\n   to prevent errors which shouldn't occur).",
+        ],
+        'physics.vector': [
+            "* Changed _w_diff_dcm in frame.py to get the correct results.",
+        ],
+    }
