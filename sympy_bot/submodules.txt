@@ -26,7 +26,6 @@ liealgebras
 logic
 matrices
 ntheory
-numerics
 parsing
 # physics is disparate enough to list each submodule separately
 
@@ -49,10 +48,8 @@ physics.vector
 physics.wigner
 
 plotting
-polynomials
 polys
 printing
-rubi
 sandbox
 series
 sets
