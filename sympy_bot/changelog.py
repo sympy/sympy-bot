@@ -18,6 +18,10 @@ def get_valid_headers():
 
     return valid_headers
 
+def is_bullet(line):
+    l = line.lstrip()
+    return l.startswith('* ') or l.startswith('- ')
+
 def get_changelog(pr_desc):
     """
     Parse changelogs from a string
@@ -49,6 +53,7 @@ def get_changelog(pr_desc):
         return (False, "The `<!-- BEGIN RELEASE NOTES -->` block was not found",
                 changelogs)
 
+    prefix = '   '
     for line in lines:
         if line.strip() == "<!-- END RELEASE NOTES -->":
             break
@@ -107,10 +112,12 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
-            if changelogs[header] and (not line or line.startswith('   ')):
+            elif changelogs[header] and (not line or line.startswith(prefix)) and not is_bullet(line):
                 # Multiline changelog
-                changelogs[header][-1] += '\n' + line[2:]
+                len_line_prefix = len(line) - len(line.lstrip())
+                changelogs[header][-1] += '\n' + ' '*(len_line_prefix - len(prefix)) + line.lstrip()
             else:
+                prefix = ' '*(len(line) - len(line.lstrip()))
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
