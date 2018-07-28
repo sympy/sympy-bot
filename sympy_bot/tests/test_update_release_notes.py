@@ -14,9 +14,9 @@ def test_existing_header():
 
     new_notes12 = update_release_notes(rel_notes_txt=notes12, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
-    assert new_notes12.splitlines()[114:119] == ['', '* core', '  - core change 1 ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Derivatives by a variable a symbolic number of times, like `diff(f(x), (x,']
+    assert new_notes12.splitlines()[114:119] == ['', '* core', '  - core change 1 ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Derivatives by a variable a symbolic number of times, like `diff(f(x), (x,']
 
-    assert new_notes12.splitlines()[614:620] == ['* solvers', '  * solvers change 1 ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * solvers change 2 ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Enable initial condition solving in `dsolve`']
+    assert new_notes12.splitlines()[614:620] == ['* solvers', '  * solvers change 1 ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * solvers change 2 ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Enable initial condition solving in `dsolve`']
 
 
 def test_new_header():
@@ -36,10 +36,10 @@ def test_new_header():
     assert new_notes == """\
 
 * solvers
-  - solvers change ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+  - solvers change ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 * other
-  - other changes ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+  - other changes ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 ## Authors
 """
@@ -67,19 +67,19 @@ def test_insert_new_header():
     assert new_notes == """\
 
 * calculus
-  - calculus change ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+  - calculus change ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 * core
   * core change
 
 * sets
-  - sets change ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+  - sets change ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 * solvers
   * solvers change
 
 * other
-  - other changes ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+  - other changes ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 
 ## Authors
 """, new_notes
@@ -121,21 +121,21 @@ def test_multiline_indent():
     assert update_release_notes(rel_notes_txt=notes, changelogs=changelogs,
     pr_number=pr_number, authors=authors) == """\
 * parsing
-  * Added a submodule autolev which can be used to parse Autolev code to SymPy code. ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+  * Added a submodule autolev which can be used to parse Autolev code to SymPy code. ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
 * physics.mechanics
   * Added a center of mass function in functions.py which returns the position vector of the center of
     mass of a system of bodies.
 
-    ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+    ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
   * Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in
      to prevent errors which shouldn't occur).
 
-    ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+    ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
 * physics.vector
-  * Changed _w_diff_dcm in frame.py to get the correct results. ([#14758](../pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+  * Changed _w_diff_dcm in frame.py to get the correct results. ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
 ## Authors
 """

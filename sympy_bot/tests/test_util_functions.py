@@ -18,15 +18,15 @@ def test_format_change():
     pr_number = '123'
     authors = ['asmeurer']
     assert format_change(change, pr_number, authors) == \
-        '  * modified some stuff ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))\n'
+        '  * modified some stuff ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))\n'
 
     authors = ['asmeurer', 'certik']
     assert format_change(change, pr_number, authors) == \
-        '  * modified some stuff ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))\n'
+        '  * modified some stuff ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))\n'
 
     authors = ['asmeurer', 'certik', 'sympy']
     assert format_change(change, pr_number,  authors) == \
-        '  * modified some stuff ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer), [@certik](https://github.com/certik), and [@sympy](https://github.com/sympy))\n'
+        '  * modified some stuff ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer), [@certik](https://github.com/certik), and [@sympy](https://github.com/sympy))\n'
 
 def test_format_change_multiline():
     change = '* new trig solvers\n\n  ```\n  code\n  ```'
@@ -40,5 +40,5 @@ def test_format_change_multiline():
     code
     ```
 
-    ([#123](../pull/123) by [@asmeurer](https://github.com/asmeurer))
+    ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
 """
