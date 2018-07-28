@@ -5,7 +5,7 @@ import textwrap
 from collections import defaultdict
 
 PREFIX = '* '
-SUFFIX = '{indent}([#{pr_number}](../pull/{pr_number}) by {authors})\n'
+SUFFIX = '{indent}([#{pr_number}](https://github.com/sympy/sympy/pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
 VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
 
