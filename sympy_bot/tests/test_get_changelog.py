@@ -195,3 +195,26 @@ def test_multiple_multiline():
             "* Changed _w_diff_dcm in frame.py to get the correct results.",
         ],
     }
+
+def test_empty_lines():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+
+* solvers
+
+  * new solver
+
+* core
+
+  * faster core
+
+  * better stuff
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'solvers': ['* new solver'],
+        'core': ['* faster core', '* better stuff']
+    }
