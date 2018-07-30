@@ -55,6 +55,8 @@ def get_changelog(pr_desc):
 
     prefix = '   '
     for line in lines:
+        if not header and not line.strip():
+            continue
         if line.strip() == "<!-- END RELEASE NOTES -->":
             break
         if line.strip() == 'NO ENTRY':
