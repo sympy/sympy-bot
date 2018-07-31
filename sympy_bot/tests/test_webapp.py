@@ -7,6 +7,8 @@ from ..webapp import router
 # This is required for the tests to run properly
 import pytest_aiohttp
 pytest_aiohttp
+from pytest import mark
+parametrize = mark.parametrize
 
 class FakeRateLimit:
     def __init__(self, *, remaining=5000, limit=5000, reset_datetime=None):
@@ -52,7 +54,9 @@ def _assert_gh_is_empty(gh):
 def _event(data):
     return sansio.Event(data, event='pull_request', delivery_id='1')
 
-async def test_closed_without_merging():
+
+@parametrize('action', ['closed', 'synchronize', 'edited'])
+async def test_closed_without_merging(action):
     gh = FakeGH()
     event_data = {
         'pull_request': {
@@ -61,20 +65,10 @@ async def test_closed_without_merging():
             'merged': False,
             },
         }
-    closed_event_data = event_data.copy()
-    closed_event_data['action'] = 'closed'
+    event_data['action'] = 'closed'
 
-    synchronize_event_data = event_data.copy()
-    synchronize_event_data['action'] = 'synchronize'
+    event = _event(event_data)
 
-    edited_event_data = event_data.copy()
-    edited_event_data['action'] = 'edited'
-
-    closed_event = _event(closed_event_data)
-    synchronize_event = _event(synchronize_event_data)
-    edited_event = _event(edited_event_data)
-
-    for event in [closed_event, synchronize_event, edited_event]:
-        res = await router.dispatch(event, gh)
-        assert res is None
-        _assert_gh_is_empty(gh)
+    res = await router.dispatch(event, gh)
+    assert res is None
+    _assert_gh_is_empty(gh)
