@@ -4,6 +4,10 @@ from gidgethub import sansio
 
 from ..webapp import router
 
+# This is required for the tests to run properly
+import pytest_aiohttp
+pytest_aiohttp
+
 class FakeRateLimit:
     def __init__(self, *, remaining=5000, limit=5000, reset_datetime=None):
         self.remaining = remaining
@@ -45,17 +49,30 @@ def _assert_gh_is_empty(gh):
     assert gh.post_urls == []
     assert gh.post_data == []
 
+def _event(data):
+    return sansio.Event(data, event='pull_request', delivery_id='1')
+
 async def test_closed_without_merging():
     gh = FakeGH()
     event_data = {
         'pull_request': {
             'number': 1,
             'state': 'closed',
+            'merged': False,
             },
         }
-    closed_event = sansio.Event(event_data, event='pull_request', action='closed')
-    synchronize_event = sansio.Event(event_data, event='pull_request', action='synchronize')
-    edited_event = sansio.Event(event_data, event='pull_request', action='edited')
+    closed_event_data = event_data.copy()
+    closed_event_data['action'] = 'closed'
+
+    synchronize_event_data = event_data.copy()
+    synchronize_event_data['action'] = 'synchronize'
+
+    edited_event_data = event_data.copy()
+    edited_event_data['action'] = 'edited'
+
+    closed_event = _event(closed_event_data)
+    synchronize_event = _event(synchronize_event_data)
+    edited_event = _event(edited_event_data)
 
     for event in [closed_event, synchronize_event, edited_event]:
         res = await router.dispatch(event, gh)
