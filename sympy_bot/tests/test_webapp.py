@@ -42,19 +42,19 @@ class FakeGH:
         self._getitem = getitem
         self._getiter = getiter
         self._post = post
-        self.getiter_url = None
-        self.getitem_url = None
+        self.getiter_urls = []
+        self.getitem_urls = []
         self.post_urls = []
         self.post_data = []
         self.rate_limit = rate_limit or FakeRateLimit()
 
     async def getitem(self, url):
-        self.getitem_url = url
+        self.getitem_urls.append(url)
         return self._getitem_return[self.getitem_url]
 
     async def getiter(self, url):
-        self.getiter_url = url
-        for item in self._getiter_return:
+        self.getiter_urls.append(url)
+        for item in self._getiter_return[url]:
             yield item
 
     async def post(self, url, *, data):
@@ -66,8 +66,8 @@ def _assert_gh_is_empty(gh):
     assert gh._getitem == None
     assert gh._getiter == None
     assert gh._post == None
-    assert gh.getiter_url == None
-    assert gh.getitem_url == None
+    assert gh.getiter_urls == []
+    assert gh.getitem_urls == []
     assert gh.post_urls == []
     assert gh.post_data == []
 
