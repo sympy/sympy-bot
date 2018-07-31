@@ -38,10 +38,20 @@ class FakeRateLimit:
         self.reset_datetime = reset_datetime or now + datetime.timedelta(hours=1)
 
 class FakeGH:
+    """
+    Faked gh object
+
+    Arguments:
+
+    - getitem: dictionary mapping {url: result}, or None
+    - getiter: dictionary mapping {url: result}, or None
+    - rate_limit: FakeRateLimit object, or None
+    - post: dictionary mapping {(url, data): result}, or None
+    """
     def __init__(self, *, getitem=None, getiter=None, rate_limit=None, post=None):
-        self._getitem = getitem
-        self._getiter = getiter
-        self._post = post
+        self._getitem_return = getitem
+        self._getiter_return = getiter
+        self._post_return = post
         self.getiter_urls = []
         self.getitem_urls = []
         self.post_urls = []
@@ -60,12 +70,12 @@ class FakeGH:
     async def post(self, url, *, data):
         self.post_urls.append(url)
         self.post_data.append(data)
-        return self._post
+        return self._post_return[url, data]
 
 def _assert_gh_is_empty(gh):
-    assert gh._getitem == None
-    assert gh._getiter == None
-    assert gh._post == None
+    assert gh._getitem_return == None
+    assert gh._getiter_return == None
+    assert gh._post_return == None
     assert gh.getiter_urls == []
     assert gh.getitem_urls == []
     assert gh.post_urls == []
