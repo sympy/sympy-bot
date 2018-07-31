@@ -1,3 +1,23 @@
+"""
+The tests here test the webapp by sending fake requests through a fake GH
+object and checking that the right API calls were made.
+
+Each fake request has just the API information currently needed by the webapp,
+so if more API information is used, it will need to be added.
+
+The GitHub API docs are useful:
+
+- Pull request event (the main input to the webapp):
+  https://developer.github.com/v3/activity/events/types/#pullrequestevent
+- Pull request object (the 'pull_request' key to the pull request event):
+  https://developer.github.com/v3/pulls/
+- Commit objects (the output from the 'commits_url'):
+  https://developer.github.com/v3/pulls/#list-commits-on-a-pull-request
+- Comment objects (the output from the 'comments_url'):
+  https://developer.github.com/v3/issues/comments/
+
+"""
+
 import datetime
 
 from gidgethub import sansio
