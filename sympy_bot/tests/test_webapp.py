@@ -21,6 +21,7 @@ The GitHub API docs are useful:
 """
 
 import datetime
+import base64
 
 from gidgethub import sansio
 
@@ -96,6 +97,31 @@ def _assert_gh_is_empty(gh):
 def _event(data):
     return sansio.Event(data, event='pull_request', delivery_id='1')
 
+version = '1.2.1'
+comments_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/comments'
+commits_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/commits'
+contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
+version_url = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py'
+html_url = "https://github.com/sympy/sympy/pull/1"
+
+valid_body = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+valid_body_no_entry = """
+<!-- BEGIN RELEASE NOTES -->
+NO ENTRY
+<!-- END RELEASE NOTES -->
+"""
+
+invalid_body = """
+<!-- BEGIN RELEASE NOTES -->
+
+<!-- END RELEASE NOTES -->
+"""
 
 @parametrize('action', ['closed', 'synchronize', 'edited'])
 async def test_closed_without_merging(action):
@@ -114,3 +140,89 @@ async def test_closed_without_merging(action):
     res = await router.dispatch(event, gh)
     assert res is None
     _assert_gh_is_empty(gh)
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_status_good_new_comment(action):
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+            },
+            'body': valid_body,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'author': {
+                'login': 'certik',
+                },
+        },
+        # Test commits without a login
+        {
+            'author': {},
+        },
+    ]
+
+    # No comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    version_file = {
+        'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
+        }
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {
+        version_url: version_file,
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+
+    assert getiter_urls == list(getiter)
+    assert getitem_urls == list(getitem)
+    assert post_urls == []
+    assert post_data == []
