@@ -46,12 +46,15 @@ class FakeGH:
     - getitem: dictionary mapping {url: result}, or None
     - getiter: dictionary mapping {url: result}, or None
     - rate_limit: FakeRateLimit object, or None
-    - post: dictionary mapping {(url, data): result}, or None
+    - post: dictionary mapping {url: result}, or None
+    - patch: dictionary mapping {url: result}, or None
     """
-    def __init__(self, *, getitem=None, getiter=None, rate_limit=None, post=None):
+    def __init__(self, *, getitem=None, getiter=None, rate_limit=None,
+        post=None, patch=None):
         self._getitem_return = getitem
         self._getiter_return = getiter
         self._post_return = post
+        self._patch_return = patch
         self.getiter_urls = []
         self.getitem_urls = []
         self.post_urls = []
@@ -60,7 +63,7 @@ class FakeGH:
 
     async def getitem(self, url):
         self.getitem_urls.append(url)
-        return self._getitem_return[self.getitem_url]
+        return self._getitem_return[url]
 
     async def getiter(self, url):
         self.getiter_urls.append(url)
@@ -70,7 +73,12 @@ class FakeGH:
     async def post(self, url, *, data):
         self.post_urls.append(url)
         self.post_data.append(data)
-        return self._post_return[url, data]
+        return self._post_return[url]
+
+    async def patch(self, url, *, data):
+        self.patch_urls.append(url)
+        self.patch_data.append(data)
+        return self._patch_return[url]
 
 def _assert_gh_is_empty(gh):
     assert gh._getitem_return == None
@@ -80,6 +88,8 @@ def _assert_gh_is_empty(gh):
     assert gh.getitem_urls == []
     assert gh.post_urls == []
     assert gh.post_data == []
+    assert gh.patch_urls == []
+    assert gh.patch_data == []
 
 def _event(data):
     return sansio.Event(data, event='pull_request', delivery_id='1')
