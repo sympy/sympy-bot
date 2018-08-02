@@ -53,6 +53,16 @@ class FakeGH:
     - rate_limit: FakeRateLimit object, or None
     - post: dictionary mapping {url: result}, or None
     - patch: dictionary mapping {url: result}, or None
+
+    The results are stored in the properties
+
+    - getiter_urls: list of urls called with getiter
+    - getitem_urls: list of urls called with getitem
+    - post_urls: list of urls called with post
+    - post_data: list of the data input for each post
+    - patch_urls: list of urls called with patch
+    - patch_data: list of the data input for each patch
+
     """
     def __init__(self, *, getitem=None, getiter=None, rate_limit=None,
         post=None, patch=None):
@@ -64,6 +74,8 @@ class FakeGH:
         self.getitem_urls = []
         self.post_urls = []
         self.post_data = []
+        self.patch_urls = []
+        self.patch_data = []
         self.rate_limit = rate_limit or FakeRateLimit()
 
     async def getitem(self, url):
