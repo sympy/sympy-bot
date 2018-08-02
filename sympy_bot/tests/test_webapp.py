@@ -17,6 +17,8 @@ The GitHub API docs are useful:
   https://developer.github.com/v3/issues/comments/
 - Contents objects (the output from the version_url):
   https://developer.github.com/v3/repos/contents/
+- Statuses objects (the output from statuses_url):
+  https://developer.github.com/v3/repos/statuses/
 
 """
 
