@@ -251,5 +251,5 @@ if they are formatted correctly. -->
 """
     status, message, changelogs = get_changelog(desc)
     assert not status
-    assert 'No release notes found' in message
+    assert 'No release notes were found' in message
     assert not changelogs
