@@ -5,7 +5,7 @@ python:
   - 3.6
 
 install:
-  - pip install pyflakes pytest gidgethub aiohttp requests pytest-aiohttp
+  - pip install pyflakes pytest gidgethub aiohttp requests pytest-aiohttp pytest-mock
 
 script:
   - pyflakes .
