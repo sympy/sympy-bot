@@ -396,3 +396,234 @@ async def test_status_good_existing_comment(action):
     for line in valid_PR_description:
         assert line in comment
     assert "good order" in comment
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_status_bad_new_comment(action):
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+            },
+            'body': invalid_PR_description,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'author': {
+                'login': 'certik',
+                },
+        },
+        # Test commits without a login
+        {
+            'author': {},
+        },
+    ]
+
+    # No comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {}
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
+
+    assert getiter_urls == list(getiter)
+    assert getitem_urls == list(getitem)
+    assert post_urls == [comments_url, statuses_url]
+    assert len(post_data) == 2
+    # Comments data
+    assert post_data[0].keys() == {"body"}
+    comment = post_data[0]["body"]
+    assert ":white_check_mark:" not in comment
+    assert ":x:" in comment
+    assert "new trig solvers" not in comment
+    assert "error" not in comment
+    assert "There was an issue" in comment
+    assert "https://github.com/sympy/sympy-bot" in comment
+    for line in invalid_PR_description:
+        assert line in comment
+    assert "good order" not in comment
+    assert "No release notes were found" in comment
+    # Statuses data
+    assert post_data[1] == {
+        "state": "failure",
+        "target_url": comment_html_url,
+        "description": "The release notes check failed",
+        "context": "sympy-bot/release-notes",
+    }
+    assert patch_urls == []
+    assert patch_data == []
+
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_status_bad_existing_comment(action):
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+            },
+            'body': invalid_PR_description,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'author': {
+                'login': 'certik',
+                },
+        },
+        # Test commits without a login
+        {
+            'author': {},
+        },
+    ]
+
+    # Has comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'sympy-bot',
+            },
+            'url': existing_comment_url,
+        },
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {}
+    post = {
+        statuses_url: {},
+    }
+
+    patch = {
+        existing_comment_url: {
+            'html_url': comment_html_url,
+        },
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post, patch=patch)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
+
+    assert getiter_urls == list(getiter)
+    assert getitem_urls == list(getitem)
+    assert post_urls == [statuses_url]
+    # Statuses data
+    assert post_data == [{
+        "state": "failure",
+        "target_url": comment_html_url,
+        "description": "The release notes check failed",
+        "context": "sympy-bot/release-notes",
+    }]
+    # Comments data
+    assert patch_urls == [existing_comment_url]
+    assert len(patch_data) == 1
+    assert patch_data[0].keys() == {"body"}
+    comment = patch_data[0]["body"]
+    assert ":white_check_mark:" not in comment
+    assert ":x:" in comment
+    assert "new trig solvers" not in comment
+    assert "error" not in comment
+    assert "There was an issue" in comment
+    assert "https://github.com/sympy/sympy-bot" in comment
+    for line in invalid_PR_description:
+        assert line in comment
+    assert "good order" not in comment
+    assert "No release notes were found" in comment, comment
