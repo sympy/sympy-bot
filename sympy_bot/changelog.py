@@ -139,7 +139,11 @@ def get_changelog(pr_desc):
             ]
             status = False
     if not message_list:
-        message_list = ["Your release notes are in good order."]
+        if not changelogs:
+            status = False
+            message_list = ["No release notes found. Please add release notes to the pull request. See the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) for more information."]
+        else:
+            message_list = ["Your release notes are in good order."]
     if not status:
         changelogs.clear()
     return status, '\n'.join(message_list), changelogs
