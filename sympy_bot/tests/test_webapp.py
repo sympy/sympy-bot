@@ -118,20 +118,20 @@ contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
 version_url = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py'
 html_url = "https://github.com/sympy/sympy/pull/1"
 
-valid_body = """
+valid_PR_description = """
 <!-- BEGIN RELEASE NOTES -->
 * solvers
   * new trig solvers
 <!-- END RELEASE NOTES -->
 """
 
-valid_body_no_entry = """
+valid_PR_description_no_entry = """
 <!-- BEGIN RELEASE NOTES -->
 NO ENTRY
 <!-- END RELEASE NOTES -->
 """
 
-invalid_body = """
+invalid_PR_description = """
 <!-- BEGIN RELEASE NOTES -->
 
 <!-- END RELEASE NOTES -->
@@ -175,7 +175,7 @@ async def test_status_good_new_comment(action):
                     'html_url': html_url,
                 },
             },
-            'body': valid_body,
+            'body': valid_PR_description,
         },
         'action': action,
     }
