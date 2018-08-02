@@ -24,6 +24,7 @@ The GitHub API docs are useful:
 
 import datetime
 import base64
+from functools import wraps
 
 from gidgethub import sansio
 
@@ -139,6 +140,24 @@ invalid_PR_description = """
 
 <!-- END RELEASE NOTES -->
 """
+
+def _run(args, shell=False, check=True):
+    return (args, dict(shell=shell, check=check))
+
+def mock_run(func):
+    @wraps(func)
+    def _func(*args, **kwargs):
+        from .. import webapp
+        try:
+            orig_run = webapp.run
+            webapp.run = _run
+            func(*args, **kwargs)
+        finally:
+            webapp.run = orig_run
+@mock_run
+def test_mock_run():
+    from ..webapp import run
+    assert run(["echo", "test"]) == (["echo", "test"], dict(shell=False, check=True))
 
 @parametrize('action', ['closed', 'synchronize', 'edited'])
 async def test_closed_without_merging(action):
