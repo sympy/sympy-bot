@@ -627,3 +627,104 @@ async def test_status_bad_existing_comment(action):
         assert line in comment
     assert "good order" not in comment
     assert "No release notes were found" in comment, comment
+
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_rate_limit_comment(action):
+    # Based on test_status_good_new_comment
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+            },
+            'body': valid_PR_description,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'author': {
+                'login': 'certik',
+                },
+        },
+        # Test commits without a login
+        {
+            'author': {},
+        },
+    ]
+
+    # No comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    version_file = {
+        'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
+        }
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {
+        version_url: version_file,
+    }
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
+
+    event = _event(event_data)
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    reset_datetime = now + datetime.timedelta(hours=1)
+    rate_limit = FakeRateLimit(remaining=5, limit=1000, reset_datetime=reset_datetime)
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post, rate_limit=rate_limit)
+
+    await router.dispatch(event, gh)
+
+    # Everything else is already tested in test_status_good_new_comment()
+    # above
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    assert post_urls == [comments_url, statuses_url, comments_url]
+    assert len(post_data) == 3
+    assert post_data[2].keys() == {"body"}
+    comment = post_data[2]["body"]
+    assert ":warning:" in comment
+    assert "5" in comment
+    assert "1000" in comment
+    assert str(reset_datetime) in comment
