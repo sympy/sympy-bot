@@ -117,6 +117,8 @@ commits_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/commits'
 contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
 version_url = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py'
 html_url = "https://github.com/sympy/sympy/pull/1"
+comment_html_url = html_url + "#issuecomment-1"
+statuses_url = "https://api.github.com/repos/sympy/sympy/statuses/4a09f9f253c7372ec857774b1fe114b1266013fe"
 
 valid_PR_description = """
 <!-- BEGIN RELEASE NOTES -->
@@ -176,6 +178,7 @@ async def test_status_good_new_comment(action):
                 },
             },
             'body': valid_PR_description,
+            'statuses_url': statuses_url,
         },
         'action': action,
     }
@@ -224,10 +227,16 @@ async def test_status_good_new_comment(action):
     getitem = {
         version_url: version_file,
     }
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
 
     event = _event(event_data)
 
-    gh = FakeGH(getiter=getiter, getitem=getitem)
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
 
     await router.dispatch(event, gh)
 
@@ -235,8 +244,30 @@ async def test_status_good_new_comment(action):
     getiter_urls = gh.getiter_urls
     post_urls = gh.post_urls
     post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
     assert getitem_urls == list(getitem)
-    assert post_urls == []
-    assert post_data == []
+    assert post_urls == [comments_url, statuses_url]
+    assert len(post_data) == 2
+    # Comments data
+    assert post_data[0].keys() == {"body"}
+    comment = post_data[0]["body"]
+    assert ":white_check_mark:" in comment
+    assert ":x:" not in comment
+    assert "new trig solvers" in comment
+    assert "error" not in comment
+    assert "https://github.com/sympy/sympy-bot" in comment
+    for line in valid_PR_description:
+        assert line in comment
+    assert "good order" in comment
+    # Statuses data
+    assert post_data[1] == {
+        "state": "success",
+        "target_url": comment_html_url,
+        "description": "The release notes look OK",
+        "context": "sympy-bot/release-notes",
+    }
+    assert patch_urls == []
+    assert patch_data == []
