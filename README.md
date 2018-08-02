@@ -1,9 +1,23 @@
 # SymPy Bot
 
-This is a GitHub bot for SymPy. It is run by the
-[@sympy-bot](https://github.com/sympy-bot) user on Heroku.
+This is a GitHub bot for SymPy. It runs on Heroku and uses the
+[@sympy-bot](https://github.com/sympy-bot) GitHub user.
 
-# Setting up the bot
+The bot makes sure that every pull request to SymPy has a release notes entry
+in the pull request description. It then automatically adds these notes to the
+[release notes](https://github.com/sympy/sympy/wiki/Release-Notes) on the wiki
+when the pull request is merged.
+
+See [the guide on the SymPy
+wiki](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) on how to
+write release notes.
+
+The bot may also do other things in the future. If you have any suggestions or
+have found any bugs, please open an
+[issue](https://github.com/sympy/sympy-bot/issues). Pull requests are welcome
+too.
+
+## Setting up the bot
 
 [This tutorial](https://github-bot-tutorial.readthedocs.io/en/latest) is very
 good on how to set up Heroku and write GitHub bots. This bot is based on it.
@@ -44,7 +58,7 @@ Next you need to set up the bot on GitHub. To do so, follow these steps:
    - `GH_SECRET`: set this to the secret you created in step 1 above
    - `GH_AUTH`: set this to the personal access token for the `sympy-bot`
      user. If you don't have this or need to regenerate it, login as the bot
-     user and go to the personal access token settings (for instance, at
+     user and go to the personal access token settings (at
      https://github.com/settings/tokens), and create a new token. **VERY
      IMPORTANT:** Give the token `public_repo` access only.
 
@@ -69,5 +83,6 @@ configured to run on https://github.com/asmeurer/GitHub-Issues-Test.
 
 To test, push to a separate branch (`master` has branch protection) on this
 repo (you can also set up a separate testing deploy for your fork if you
-want). Then go to https://dashboard.heroku.com/apps/sympy-bot-testing and
-manually deploy the branch.
+want). Then go to
+https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
+deploy the branch.

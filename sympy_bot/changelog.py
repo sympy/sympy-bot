@@ -5,7 +5,7 @@ import textwrap
 from collections import defaultdict
 
 PREFIX = '* '
-SUFFIX = '{indent}([#{pr_number}](../pull/{pr_number}) by {authors})\n'
+SUFFIX = '{indent}([#{pr_number}](https://github.com/sympy/sympy/pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
 VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
 
@@ -17,6 +17,10 @@ def get_valid_headers():
                 valid_headers.append(line.strip())
 
     return valid_headers
+
+def is_bullet(line):
+    l = line.lstrip()
+    return l.startswith('* ') or l.startswith('- ')
 
 def get_changelog(pr_desc):
     """
@@ -49,7 +53,10 @@ def get_changelog(pr_desc):
         return (False, "The `<!-- BEGIN RELEASE NOTES -->` block was not found",
                 changelogs)
 
+    prefix = '   '
     for line in lines:
+        if not header and not line.strip():
+            continue
         if line.strip() == "<!-- END RELEASE NOTES -->":
             break
         if line.strip() == 'NO ENTRY':
@@ -107,10 +114,12 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
-            if changelogs[header] and (not line or line.startswith('   ')):
+            elif changelogs[header] and (not line or line.startswith(prefix)) and not is_bullet(line):
                 # Multiline changelog
-                changelogs[header][-1] += '\n' + line[2:]
+                len_line_prefix = len(line) - len(line.lstrip())
+                changelogs[header][-1] += '\n' + ' '*(len_line_prefix - len(prefix)) + line.lstrip()
             else:
+                prefix = ' '*(len(line) - len(line.lstrip()))
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
@@ -130,7 +139,11 @@ def get_changelog(pr_desc):
             ]
             status = False
     if not message_list:
-        message_list = ["Your release notes are in good order."]
+        if not changelogs:
+            status = False
+            message_list = ["No release notes were found. Please add release notes to the pull request description. See the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) for more information."]
+        else:
+            message_list = ["Your release notes are in good order."]
     if not status:
         changelogs.clear()
     return status, '\n'.join(message_list), changelogs

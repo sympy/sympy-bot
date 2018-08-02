@@ -164,3 +164,92 @@ def test_multiline():
         'solvers': ['* new trig solvers\n\n  ```\n  code\n  ```'],
         'core': ['* core change'],
     }
+
+def test_multiple_multiline():
+    # from sympy/sympy#14758, see #14
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* parsing
+    * Added a submodule autolev which can be used to parse Autolev code to SymPy code.
+* physics.mechanics
+    * Added a center of mass function in functions.py which returns the position vector of the center of
+      mass of a system of bodies.
+    * Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in
+       to prevent errors which shouldn't occur).
+* physics.vector
+    * Changed _w_diff_dcm in frame.py to get the correct results.
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'parsing': [
+            '* Added a submodule autolev which can be used to parse Autolev code to SymPy code.',
+        ],
+        'physics.mechanics': [
+            '* Added a center of mass function in functions.py which returns the position vector of the center of\n  mass of a system of bodies.',
+            "* Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in\n   to prevent errors which shouldn't occur).",
+        ],
+        'physics.vector': [
+            "* Changed _w_diff_dcm in frame.py to get the correct results.",
+        ],
+    }
+
+def test_empty_lines():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+
+* solvers
+
+  * new solver
+
+* core
+
+  * faster core
+
+  * better stuff
+
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'solvers': ['* new solver'],
+        'core': ['* faster core', '* better stuff']
+    }
+
+
+def test_empty():
+    desc = r"""
+<!-- Your title above should be a short description of what
+was changed. Do not include the issue number in the title. -->
+
+#### References to other Issues or PRs
+<!-- If this pull request fixes an issue, write "Fixes #NNNN" in that exact
+format, e.g. "Fixes #1234". See
+https://github.com/blog/1506-closing-issues-via-pull-requests .-->
+
+
+#### Brief description of what is fixed or changed
+
+
+#### Other comments
+
+
+#### Release Notes
+
+<!-- Write the release notes for this release below. See
+https://github.com/sympy/sympy/wiki/Writing-Release-Notes for more information
+on how to write release notes. If there is no release notes entry for this PR,
+write "NO ENTRY". The bot will check your release notes automatically to see
+if they are formatted correctly. -->
+
+<!-- BEGIN RELEASE NOTES -->
+
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert 'No release notes were found' in message
+    assert not changelogs
