@@ -1,9 +1,23 @@
 # SymPy Bot
 
-This is a GitHub bot for SymPy. It is run by the
-[@sympy-bot](https://github.com/sympy-bot) user on Heroku.
+This is a GitHub bot for SymPy. It runs on Heroku and uses the
+[@sympy-bot](https://github.com/sympy-bot) GitHub user.
 
-# Setting up the bot
+The bot makes sure that every pull request to SymPy has a release notes entry
+in the pull request description. It then automatically adds these notes to the
+[release notes](https://github.com/sympy/sympy/wiki/Release-Notes) on the wiki
+when the pull request is merged.
+
+See [the guide on the SymPy
+wiki](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) on how to
+write release notes.
+
+The bot may also do other things in the future. If you have any suggestions or
+have found any bugs, please open an
+[issue](https://github.com/sympy/sympy-bot/issues). Pull requests are welcome
+too.
+
+## Setting up the bot
 
 [This tutorial](https://github-bot-tutorial.readthedocs.io/en/latest) is very
 good on how to set up Heroku and write GitHub bots. This bot is based on it.
