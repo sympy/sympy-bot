@@ -111,6 +111,8 @@ def get_changelog(pr_desc):
                     '* solvers',
                     '  * improve solving of trig equations',
                     '```',
+                    '',
+                    "A list of valid headers can be found at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
                 ]
                 status = False
                 break
