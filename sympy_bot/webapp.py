@@ -144,24 +144,23 @@ There was an error processing the release notes, which most likely indicates a b
                 message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {release_notes_url}.'
 
     PR_message = f"""\
-{emoji_status[status]}
+{emoji_status[status] if status else ''}
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to make sure this pull request has a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes). <details><summary>Click here to see the pull request description that was parsed.</summary>
-
-{textwrap.indent(event.data['pull_request']['body'], '    ')}
-
-</details><p>
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 """
     if not status:
-        PR_message += "There was an issue with the release notes."
+        PR_message += f"{emoji_status[status]} There was an issue with the release notes. **Please do not close this pull request;** instead edit the description after reading the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes)."
 
     PR_message += f"""
 
 {message}
 
-Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it.
+Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it. <details><summary>Click here to see the pull request description that was parsed.</summary>
 
+{textwrap.indent(event.data['pull_request']['body'], '    ')}
+
+</details><p>
 """
 
     if existing_comment:
