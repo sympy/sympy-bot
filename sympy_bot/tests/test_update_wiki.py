@@ -16,3 +16,7 @@ def test_run(mocker, capsys):
     captured = capsys.readouterr()
     assert captured.out == 'echo ~~~~~\n~~~~~\n\n'
     assert captured.err == ''
+
+def test_update_wiki(mocker):
+    mocker.patch.dict(os.environ, {"GH_AUTH": token})
+    mocker.patch('subprocess.run')
