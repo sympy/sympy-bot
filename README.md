@@ -86,3 +86,22 @@ repo (you can also set up a separate testing deploy for your fork if you
 want). Then go to
 https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
 deploy the branch.
+
+On Travis, there is a test that the wiki updates properly, which tests against
+https://github.com/sympy/sympy-bot/wiki/Release-Notes-Tests. This requires a
+personal access token to be installed on Travis.
+
+This token is currently given on the @sympy-bot GitHub users. To regenerate
+it, login as @sympy-bot, and go to https://github.com/settings/tokens/. Create
+a new token, checking only the `public_repo` box. Be sure to indicate in the
+description that the token is for Travis testing, and be sure to revoke any
+old tokens. The @sympy-bot user needs push access to this repo for the test to
+work. Then go to https://travis-ci.org/sympy/sympy-bot/settings and add the
+token as an environment variable for `TESTING_TOKEN`. **Make sure to set the
+variable as not visible in the build log.** The environment variable should
+show up as a lock after it has been added.
+
+The test will only be run on Travis builds on branches pushed to this repo (it
+won't run on branches pushed to forks). Thus, if you make any changes to this
+code, someone with push access will need to push your branch up to the main
+repo in order for it to be tested.
