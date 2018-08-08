@@ -29,6 +29,6 @@ def test_update_wiki(mocker):
         wiki_url='https://github.com/sympy/sympy-bot.wiki',
         release_notes_file='Release-Notes-Tests.md',
         changelogs={'other': [f'* Release notes update from {travis_url}']},
-        pr_number='1',
+        pr_number='14942',
         authors=['asmeurer'],
     )
