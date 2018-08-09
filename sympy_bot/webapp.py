@@ -10,7 +10,8 @@ from gidgethub import routing, sansio, BadRequest
 from gidgethub.aiohttp import GitHubAPI
 
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
-                        get_release_notes_filename)
+                        get_release_notes_filename, BEGIN_RELEASE_NOTES,
+                        END_RELEASE_NOTES)
 from .update_wiki import update_wiki
 
 router = routing.Router()
@@ -72,9 +73,13 @@ async def pull_request_comment(event, gh):
     commits_url = event.data["pull_request"]["commits_url"]
     commits = gh.getiter(commits_url)
     users = set()
+    header_in_message = False
     async for commit in commits:
         if commit['author']:
             users.add(commit['author']['login'])
+        message = commit['commit']['message']
+        if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
+            header_in_message = commit['sha']
 
     if not users:
         users = {event.data['pull_request']['head']['user']['login']}
@@ -93,6 +98,10 @@ async def pull_request_comment(event, gh):
             break
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
+
+    if status and header_in_message:
+        status = False
+        message = f"The `{BEGIN_RELEASE_NOTES}` / `{END_RELEASE_NOTES}` block should go in the pull request description only, not the commit messages. It was found in the message for the commit {header_in_message}. See https://github.com/sympy/sympy/wiki/Development-workflow#changing-of-commit-messages for information on how to edit commit messages."
 
     gh_status = 'success' if status else 'failure'
 

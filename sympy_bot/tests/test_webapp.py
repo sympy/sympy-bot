@@ -193,15 +193,27 @@ async def test_status_good_new_comment(action):
             'author': {
                 'login': 'asmeurer',
             },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         {
             'author': {
                 'login': 'certik',
-                },
+            },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         # Test commits without a login
         {
             'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
     ]
 
@@ -309,15 +321,27 @@ async def test_status_good_existing_comment(action):
             'author': {
                 'login': 'asmeurer',
             },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         {
             'author': {
                 'login': 'certik',
                 },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         # Test commits without a login
         {
             'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
     ]
 
@@ -432,15 +456,27 @@ async def test_status_bad_new_comment(action):
             'author': {
                 'login': 'asmeurer',
             },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         {
             'author': {
                 'login': 'certik',
                 },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         # Test commits without a login
         {
             'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
     ]
 
@@ -544,15 +580,27 @@ async def test_status_bad_existing_comment(action):
             'author': {
                 'login': 'asmeurer',
             },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         {
             'author': {
                 'login': 'certik',
                 },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         # Test commits without a login
         {
             'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
     ]
 
@@ -665,15 +713,27 @@ async def test_rate_limit_comment(action):
             'author': {
                 'login': 'asmeurer',
             },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         {
             'author': {
                 'login': 'certik',
                 },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
         # Test commits without a login
         {
             'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
         },
     ]
 
@@ -731,3 +791,136 @@ async def test_rate_limit_comment(action):
     assert "5" in comment
     assert "1000" in comment
     assert str(reset_datetime) in comment
+
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_header_in_message(action):
+    # Based on test_status_good_new_comment
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+            },
+            'body': valid_PR_description,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+            'commit': {
+                'message': """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * solver change
+<!-- END RELEASE NOTES -->
+"""
+            },
+            'sha': '174b8b37bc33e9eb29e710a233190d02a13bdb54',
+        },
+        {
+            'author': {
+                'login': 'certik',
+            },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+        },
+        # Test commits without a login
+        {
+            'author': {},
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+        },
+    ]
+
+    # No comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    version_file = {
+        'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
+        }
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {}
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
+
+    # The rest is already tested in test_status_good_new_comment
+    assert getiter_urls == list(getiter)
+    assert getitem_urls == list(getitem)
+    assert post_urls == [comments_url, statuses_url]
+    assert len(post_data) == 2
+    # Comments data
+    assert post_data[0].keys() == {"body"}
+    comment = post_data[0]["body"]
+    assert ":white_check_mark:" not in comment
+    assert ":x:" in comment
+    assert "error" not in comment
+    assert "https://github.com/sympy/sympy-bot" in comment
+    assert "good order" not in comment
+    assert "174b8b37bc33e9eb29e710a233190d02a13bdb54" in comment
+    assert "<!-- BEGIN RELEASE NOTES -->" in comment
+    assert "<!-- END RELEASE NOTES -->" in comment
+    # Statuses data
+    assert post_data[1] == {
+        "state": "failure",
+        "target_url": comment_html_url,
+        "description": "The release notes check failed",
+        "context": "sympy-bot/release-notes",
+    }
+    assert patch_urls == []
+    assert patch_data == []
