@@ -8,6 +8,8 @@ PREFIX = '* '
 SUFFIX = '{indent}([#{pr_number}](https://github.com/sympy/sympy/pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
 VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
+BEGIN_RELEASE_NOTES = "<!-- BEGIN RELEASE NOTES -->"
+END_RELEASE_NOTES = "<!-- END RELEASE NOTES -->"
 
 def get_valid_headers():
     valid_headers = []
@@ -47,17 +49,17 @@ def get_changelog(pr_desc):
 
     # First find the release notes header
     for line in lines:
-        if line.strip() == "<!-- BEGIN RELEASE NOTES -->":
+        if line.strip() == BEGIN_RELEASE_NOTES:
             break
     else:
-        return (False, "The `<!-- BEGIN RELEASE NOTES -->` block was not found",
+        return (False, f"The `{BEGIN_RELEASE_NOTES}` block was not found",
                 changelogs)
 
     prefix = '   '
     for line in lines:
         if not header and not line.strip():
             continue
-        if line.strip() == "<!-- END RELEASE NOTES -->":
+        if line.strip() == END_RELEASE_NOTES:
             break
         if line.strip() == 'NO ENTRY':
             message_list += ["No release notes entry will be added for this pull request."]
@@ -125,7 +127,7 @@ def get_changelog(pr_desc):
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
-            message_list += ['No release notes were detected. If there is no release notes entry, please write `NO ENTRY` in the PR description under `<!-- BEGIN RELEASE NOTES -->`.']
+            message_list += [f'No release notes were detected. If there is no release notes entry, please write `NO ENTRY` in the PR description under `{BEGIN_RELEASE_NOTES}`.']
             status = False
 
     for header in changelogs:
