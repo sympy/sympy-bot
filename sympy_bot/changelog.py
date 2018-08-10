@@ -107,7 +107,7 @@ def get_changelog(pr_desc):
         else:
             if not header:
                 message_list += [
-                    '*  No subheader found. Please add a header for the module, for example,',
+                    '* No subheader found. Please add a header for the module, for example,',
                     '',
                     '  ```',
                     '  * solvers',
