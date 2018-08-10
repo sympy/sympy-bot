@@ -62,7 +62,7 @@ def get_changelog(pr_desc):
         if line.strip() == END_RELEASE_NOTES:
             break
         if line.strip() == 'NO ENTRY':
-            message_list += ["No release notes entry will be added for this pull request."]
+            message_list += ["* No release notes entry will be added for this pull request."]
             changelogs.clear()
             status = True
             break
