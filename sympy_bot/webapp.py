@@ -161,7 +161,7 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'
 
 """
     if not status:
-        PR_message += "There was an issue with the release notes."
+        PR_message += "There was an issue with the release notes:"
 
     PR_message += f"""
 
