@@ -101,7 +101,7 @@ async def pull_request_comment(event, gh):
 
     if status and header_in_message:
         status = False
-        message = f"The `{BEGIN_RELEASE_NOTES}` / `{END_RELEASE_NOTES}` block should go in the pull request description only, not the commit messages. It was found in the message for the commit {header_in_message}. See https://github.com/sympy/sympy/wiki/Development-workflow#changing-of-commit-messages for information on how to edit commit messages."
+        message = f"* The `{BEGIN_RELEASE_NOTES}` / `{END_RELEASE_NOTES}` block should go in the pull request description only, not the commit messages. It was found in the message for the commit {header_in_message}. See https://github.com/sympy/sympy/wiki/Development-workflow#changing-of-commit-messages for information on how to edit commit messages."
 
     gh_status = 'success' if status else 'failure'
 

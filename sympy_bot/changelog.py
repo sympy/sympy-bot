@@ -52,7 +52,7 @@ def get_changelog(pr_desc):
         if line.strip() == BEGIN_RELEASE_NOTES:
             break
     else:
-        return (False, f"The `{BEGIN_RELEASE_NOTES}` block was not found",
+        return (False, f"* The `{BEGIN_RELEASE_NOTES}` block was not found",
                 changelogs)
 
     prefix = '   '
@@ -107,7 +107,7 @@ def get_changelog(pr_desc):
         else:
             if not header:
                 message_list += [
-                    '  No subheader found. Please add a header for the module, for example,',
+                    '*  No subheader found. Please add a header for the module, for example,',
                     '',
                     '  ```',
                     '  * solvers',
