@@ -52,7 +52,7 @@ def get_changelog(pr_desc):
         if line.strip() == BEGIN_RELEASE_NOTES:
             break
     else:
-        return (False, f"The `{BEGIN_RELEASE_NOTES}` block was not found",
+        return (False, f"* The `{BEGIN_RELEASE_NOTES}` block was not found",
                 changelogs)
 
     prefix = '   '
@@ -62,7 +62,7 @@ def get_changelog(pr_desc):
         if line.strip() == END_RELEASE_NOTES:
             break
         if line.strip() == 'NO ENTRY':
-            message_list += ["No release notes entry will be added for this pull request."]
+            message_list += ["* No release notes entry will be added for this pull request."]
             changelogs.clear()
             status = True
             break
@@ -74,31 +74,31 @@ def get_changelog(pr_desc):
                 if ' ' in header:
                     # Most likely just forgot the header
                     message_list += [
-                        "Release notes must include a header. Please use the submodule name as the header, like",
-                        "```",
-                        "* core",
-                        "  * made Add faster",
+                        "* Release notes must include a header. Please use the submodule name as the header, like",
+                        "  ```",
+                        "  * core",
+                        "    * made Add faster",
                         "",
-                        "* printing",
-                        "  * improve LaTeX printing of fractions",
-                        "```",
+                        "  * printing",
+                        "    * improve LaTeX printing of fractions",
+                        "  ```",
                         "",
-                        "See [here](https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt) for a list of valid release notes headers.",
+                        "  See [here](https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt) for a list of valid release notes headers.",
                     ]
                 else:
                     message_list += [
-                        "%s is not a valid release notes header. Release notes headers should be SymPy submodule names, like" % header,
+                        "* `%s` is not a valid release notes header. Release notes headers should be SymPy submodule names, like" % header,
                         "",
-                        "```",
-                        "* core",
-                        "  * made Add faster",
+                        "  ```",
+                        "  * core",
+                        "    * made Add faster",
                         "",
-                        "* printing",
-                        "  * improve LaTeX printing of fractions",
-                        "```",
-                        "or `other`.",
+                        "  * printing",
+                        "    * improve LaTeX printing of fractions",
+                        "  ```",
+                        "  or `other`.",
                         "",
-                        "If you have added a new submodule, please add it to the list of valid release notes headers at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
+                        "  If you have added a new submodule, please add it to the list of valid release notes headers at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
                     ]
 
             else:
@@ -107,14 +107,14 @@ def get_changelog(pr_desc):
         else:
             if not header:
                 message_list += [
-                    'No subheader found. Please add a header for the module, for example,',
+                    '* No subheader found. Please add a header for the module, for example,',
                     '',
-                    '```',
-                    '* solvers',
-                    '  * improve solving of trig equations',
-                    '```',
+                    '  ```',
+                    '  * solvers',
+                    '    * improve solving of trig equations',
+                    '  ```',
                     '',
-                    "A list of valid headers can be found at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
+                    "  A list of valid headers can be found at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
                 ]
                 status = False
                 break
@@ -127,7 +127,7 @@ def get_changelog(pr_desc):
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
-            message_list += [f'No release notes were detected. If there is no release notes entry, please write `NO ENTRY` in the PR description under `{BEGIN_RELEASE_NOTES}`.']
+            message_list += [f'* No release notes were detected. If there is no release notes entry, please write `NO ENTRY` in the PR description under `{BEGIN_RELEASE_NOTES}`.']
             status = False
 
     for header in changelogs:
@@ -139,13 +139,13 @@ def get_changelog(pr_desc):
         changelogs[header] = changes
         if not changelogs[header]:
             message_list += [
-                'Invalid release notes entry for `%s`. Make sure it has a release notes entry under it.'  % header,
+                '* Invalid release notes entry for `%s`. Make sure it has a release notes entry under it.'  % header,
             ]
             status = False
     if not message_list:
         if not changelogs:
             status = False
-            message_list = ["No release notes were found. Please add release notes to the pull request description. See the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) for more information."]
+            message_list = ["*  No release notes were found. Please add release notes to the pull request description. See the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) for more information."]
         else:
             message_list = ["Your release notes are in good order."]
     if not status:

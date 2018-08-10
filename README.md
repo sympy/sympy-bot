@@ -85,7 +85,8 @@ To test, push to a separate branch (`master` has branch protection) on this
 repo (you can also set up a separate testing deploy for your fork if you
 want). Then go to
 https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
-deploy the branch.
+deploy the branch. You can also enable automatic deployments for the branch if
+you want to do many tests against it.
 
 On Travis, there is a test that the wiki updates properly, which tests against
 https://github.com/sympy/sympy-bot/wiki/Release-Notes-Tests. This requires a
