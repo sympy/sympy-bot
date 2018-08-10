@@ -869,10 +869,6 @@ async def test_header_in_message(action):
         },
     ]
 
-    version_file = {
-        'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
-        }
-
     getiter = {
         commits_url: commits,
         comments_url: comments,
