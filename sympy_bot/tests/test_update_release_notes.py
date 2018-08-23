@@ -125,14 +125,10 @@ def test_multiline_indent():
 
 * physics.mechanics
   * Added a center of mass function in functions.py which returns the position vector of the center of
-    mass of a system of bodies.
-
-    ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+    mass of a system of bodies. ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
   * Added a corner case check in kane.py (Passes dummy symbols to q_ind and kd_eqs if not passed in
-     to prevent errors which shouldn't occur).
-
-    ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
+     to prevent errors which shouldn't occur). ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 
 * physics.vector
   * Changed _w_diff_dcm in frame.py to get the correct results. ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))

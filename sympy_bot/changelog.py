@@ -169,7 +169,7 @@ def format_change(change, pr_number, authors):
             in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
 
     indent = ' '
-    if '\n' in change:
+    if '\n\n' in change or "```" in change:
         change += '\n\n'
         indent = '  '
 
