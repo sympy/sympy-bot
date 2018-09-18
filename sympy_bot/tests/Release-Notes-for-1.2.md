@@ -79,7 +79,7 @@ code.
   rare, and wrapping can always be done by the user if necessary.
   [#14823](https://github.com/sympy/sympy/pull/14823)
 
-## Major Changes
+## Changes
 
 * algebras
   * add new algebras submodule

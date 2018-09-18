@@ -130,6 +130,8 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
 
     if status:
         fake_release_notes = """
+## Changes
+
 ## Authors
 """
         release_notes_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
@@ -137,7 +139,7 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
         try:
             updated_fake_release_notes = update_release_notes(rel_notes_txt=fake_release_notes,
                 changelogs=changelogs, pr_number=number,
-                authors=users).replace('## Authors', '').strip()
+                authors=users).replace('## Authors', '').replace("## Changes", '').strip()
         except Exception as e:
             status = False
             status_message = "ERROR"
