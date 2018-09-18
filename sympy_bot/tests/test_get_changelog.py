@@ -51,7 +51,7 @@ NO ENTRY
 NO ENTRY
 """
     status, message, changelogs = get_changelog(desc)
-    assert status
+    assert status, message
     assert "No release notes entry" in message
     assert not changelogs
 
@@ -251,4 +251,17 @@ automatically to see if they are formatted correctly. -->
     status, message, changelogs = get_changelog(desc)
     assert not status
     assert 'No release notes were found' in message
+    assert not changelogs
+
+def test_bad_bullet():
+    desc = r"""
+    <!-- BEGIN RELEASE NOTES -->
+* core
+  *`_atomic` can recurse into arguments
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "*`_atomic` can recurse into arguments" in message
+    assert "Markdown bullet" in message
     assert not changelogs
