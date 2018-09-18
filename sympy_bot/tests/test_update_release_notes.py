@@ -18,9 +18,9 @@ def test_existing_header():
 
     assert new_notes12.splitlines()[614:620] == ['* solvers', '  * solvers change 1 ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * solvers change 2 ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer) and [@certik](https://github.com/certik))', '', '  * Enable initial condition solving in `dsolve`']
 
-
 def test_new_header():
     notes = """\
+## Changes
 
 ## Authors
 """
@@ -34,6 +34,7 @@ def test_new_header():
     new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
     assert new_notes == """\
+## Changes
 
 * solvers
   - solvers change ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
@@ -47,6 +48,7 @@ def test_new_header():
 
 def test_insert_new_header():
     notes = """\
+## Changes
 
 * core
   * core change
@@ -65,6 +67,7 @@ def test_insert_new_header():
     new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
 
     assert new_notes == """\
+## Changes
 
 * calculus
   - calculus change ([#123](https://github.com/sympy/sympy/pull/123) by [@asmeurer](https://github.com/asmeurer))
@@ -84,8 +87,36 @@ def test_insert_new_header():
 ## Authors
 """, new_notes
 
-def test_error():
+def test_no_changes_header():
+    notes = """\
+
+## Authors
+"""
+
+    # Also makes sure they are inserted in the right order. 'other' should
+    # stay last in submodules.txt
+    changelogs = {'solvers': ['- solvers change'], 'other': ['- other changes']}
+    authors = ['asmeurer']
+    pr_number = '123'
+
+    try:
+        update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
+    except RuntimeError as e:
+        assert "## Changes" in e.args[0]
+    else:
+        raise AssertionError("Did not raise")
+
     notes = ""
+
+    try:
+        update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
+    except RuntimeError as e:
+        assert "## Changes" in e.args[0]
+    else:
+        raise AssertionError("Did not raise")
+
+def test_no_authors_header():
+    notes = "## Changes"
 
     changelogs = {'solvers': ['* solvers change 1', '* solvers change 2'], 'core': ['- core change 1']}
     authors = ['asmeurer', 'certik']
@@ -98,12 +129,77 @@ def test_error():
     else:
         raise AssertionError("Did not raise")
 
+def test_before_changes_header():
+    # This is based on what happened to the 1.4 release notes (#35), except
+    # with "## Major Changes" replaced with "## Changes"
+    notes = """
+
+## Backwards compatibility breaks and deprecations
+
+**Please manually add any backwards compatibility breaks or
+[deprecations](https://github.com/sympy/sympy/wiki/Deprecating-policy) here,
+in addition to the automatic listing below.**
+
+* printing
+  * Old behavior of `theanocode.theano_function` when passed a single-element list as the `outputs` parameter has been deprecated. Use `squeeze=False` to enable the new behavior (the created function will return a single-element list also). To get a function that returns a single value not wrapped in a list, pass a single expression not wrapped in a list to `outputs` (e.g. `theano_function([x, y], x + y)` instead of `theano_function([x, y], [x + y])`). See [#14986](https://github.com/sympy/sympy/issues/14986).
+
+## Changes
+
+* printing
+  * Added `squeeze=False` option to `theanocode.theano_function` to give more consistent sequence-in-sequence-out behavior, keep old behavior as default for now but deprecate it. ([#14949](https://github.com/sympy/sympy/pull/14949) by [@jlumpe](https://github.com/jlumpe))
+
+  * Added `scalar=True` option to `theanocode.theano_function` to create a function which returns scalars instead of 0-dimensional arrays. ([#14949](https://github.com/sympy/sympy/pull/14949) by [@jlumpe](https://github.com/jlumpe))
+
+* series
+  * implemented expression-based recursive sequence class ([#15184](https://github.com/sympy/sympy/pull/15184) by [@rwbogl](https://github.com/rwbogl))
+
+## Authors
+"""
+
+    pr_number = "15207"
+    authors = ["sylee957"]
+    changelogs = {'matrices': ["- Added `iszerofunc` parameter for `_eval_det_bareiss()`"]}
+
+    new_notes = update_release_notes(rel_notes_txt=notes, changelogs=changelogs, pr_number=pr_number, authors=authors)
+
+    assert new_notes == """
+
+## Backwards compatibility breaks and deprecations
+
+**Please manually add any backwards compatibility breaks or
+[deprecations](https://github.com/sympy/sympy/wiki/Deprecating-policy) here,
+in addition to the automatic listing below.**
+
+* printing
+  * Old behavior of `theanocode.theano_function` when passed a single-element list as the `outputs` parameter has been deprecated. Use `squeeze=False` to enable the new behavior (the created function will return a single-element list also). To get a function that returns a single value not wrapped in a list, pass a single expression not wrapped in a list to `outputs` (e.g. `theano_function([x, y], x + y)` instead of `theano_function([x, y], [x + y])`). See [#14986](https://github.com/sympy/sympy/issues/14986).
+
+## Changes
+
+* matrices
+  - Added `iszerofunc` parameter for `_eval_det_bareiss()` ([#15207](https://github.com/sympy/sympy/pull/15207) by [@sylee957](https://github.com/sylee957))
+
+* printing
+  * Added `squeeze=False` option to `theanocode.theano_function` to give more consistent sequence-in-sequence-out behavior, keep old behavior as default for now but deprecate it. ([#14949](https://github.com/sympy/sympy/pull/14949) by [@jlumpe](https://github.com/jlumpe))
+
+  * Added `scalar=True` option to `theanocode.theano_function` to create a function which returns scalars instead of 0-dimensional arrays. ([#14949](https://github.com/sympy/sympy/pull/14949) by [@jlumpe](https://github.com/jlumpe))
+
+* series
+  * implemented expression-based recursive sequence class ([#15184](https://github.com/sympy/sympy/pull/15184) by [@rwbogl](https://github.com/rwbogl))
+
+## Authors
+"""
+
+
 def test_multiline_indent():
     # See test_multiple_multiline() in test_get_changelogs.py and issue #14.
     # This is from sympy/sympy#14758.
     pr_number = '14758'
     authors = ['NikhilPappu']
-    notes = "## Authors"
+    notes = """\
+## Changes
+
+## Authors
+"""
 
     changelogs = {
         'parsing': [
@@ -120,6 +216,8 @@ def test_multiline_indent():
 
     assert update_release_notes(rel_notes_txt=notes, changelogs=changelogs,
     pr_number=pr_number, authors=authors) == """\
+## Changes
+
 * parsing
   * Added a submodule autolev which can be used to parse Autolev code to SymPy code. ([#14758](https://github.com/sympy/sympy/pull/14758) by [@NikhilPappu](https://github.com/NikhilPappu))
 

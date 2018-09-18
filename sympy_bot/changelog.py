@@ -188,7 +188,15 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
     changelogs = changelogs.copy()
     authors = sorted(authors)
 
-    for line in rel_notes_txt.splitlines():
+    lines = iter(rel_notes_txt.splitlines())
+    for line in lines:
+        new_txt.append(line)
+        if line == "## Changes":
+            break
+    else:
+        raise RuntimeError("The `## Changes` header was not found in the release notes file.")
+
+    for line in lines:
         new_txt.append(line)
         line_header = line.lstrip(PREFIX)
         if line.startswith(PREFIX):
