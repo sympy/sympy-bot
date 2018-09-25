@@ -43,7 +43,6 @@ physics.quantum
 physics.secondquant
 physics.sho
 physics.units
-physics.unitsystems
 physics.vector
 physics.wigner
 
