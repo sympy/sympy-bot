@@ -31,16 +31,16 @@ If the bot stops working, look at the logs with
 
     heroku logs -a sympy-bot
 
-(you need to install the `heroku` command line tools and have access to the
+(you need to install the `Heroku` command line tools and have access to the
 sympy-bot Heroku app). You can also see the logs on
 [Heroku](https://dashboard.heroku.com/apps/sympy-bot/logs).
 
-Next you need to set up the bot on GitHub. To do so, follow these steps:
+Next, you need to set up the bot on GitHub. To do so, follow these steps:
 
 1. Go to the webhooks settings (for instance, at
    https://github.com/sympy/sympy/settings/hooks), and create a new webhook.
 
-   - Set the payload URL to the Heroku app url (for instance,
+   - Set the payload URL to the Heroku app URL (for instance,
      https://sympy-bot.herokuapp.com/)
    - Set the content type to `application/json`
    - Generate a random password for the secret. I used the keychain app on my
@@ -78,11 +78,11 @@ to enable the bot version environment variable (run this if the version is
 ## Testing
 
 There is a testing deploy set up at
-https://dashboard.heroku.com/apps/sympy-bot-testing. Currently it is
+https://dashboard.heroku.com/apps/sympy-bot-testing. Currently, it is
 configured to run on https://github.com/asmeurer/GitHub-Issues-Test.
 
 To test, push to a separate branch (`master` has branch protection) on this
-repo (you can also set up a separate testing deploy for your fork if you
+repo (you can also set up separate testing deploy for your fork if you
 want). Then go to
 https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
 deploy the branch. You can also enable automatic deployments for the branch if
@@ -96,7 +96,7 @@ This token is currently given on the @sympy-bot GitHub user. To regenerate it,
 login as @sympy-bot, and go to https://github.com/settings/tokens/. Create a
 new token, checking only the `public_repo` box. Be sure to indicate in the
 description that the token is for Travis testing, and be sure to revoke any
-old tokens. The @sympy-bot user needs push access to this repo for the test to
+old tokens. The @sympy-bot user needs to push access to this repo for the test to
 work. Then go to https://travis-ci.org/sympy/sympy-bot/settings and add the
 token as an environment variable for `TESTING_TOKEN`. **Make sure to set the
 variable as not visible in the build log.** The environment variable should
