@@ -96,7 +96,7 @@ This token is currently given on the @sympy-bot GitHub user. To regenerate it,
 login as @sympy-bot, and go to https://github.com/settings/tokens/. Create a
 new token, checking only the `public_repo` box. Be sure to indicate in the
 description that the token is for Travis testing, and be sure to revoke any
-old tokens. The @sympy-bot user needs to push access to this repo for the test to
+old tokens. The @sympy-bot user needs push access to this repo for the test to
 work. Then go to https://travis-ci.org/sympy/sympy-bot/settings and add the
 token as an environment variable for `TESTING_TOKEN`. **Make sure to set the
 variable as not visible in the build log.** The environment variable should
