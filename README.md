@@ -31,7 +31,7 @@ If the bot stops working, look at the logs with
 
     heroku logs -a sympy-bot
 
-(you need to install the `Heroku` command line tools and have access to the
+(you need to install the `heroku` command line tools and have access to the
 sympy-bot Heroku app). You can also see the logs on
 [Heroku](https://dashboard.heroku.com/apps/sympy-bot/logs).
 
