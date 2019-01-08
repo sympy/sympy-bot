@@ -82,7 +82,7 @@ https://dashboard.heroku.com/apps/sympy-bot-testing. Currently, it is
 configured to run on https://github.com/asmeurer/GitHub-Issues-Test.
 
 To test, push to a separate branch (`master` has branch protection) on this
-repo (you can also seta up separate testing deploy for your fork if you
+repo (you can also set up a separate testing deploy for your fork if you
 want). Then go to
 https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
 deploy the branch. You can also enable automatic deployments for the branch if
