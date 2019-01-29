@@ -220,6 +220,30 @@ def test_empty_lines():
     }
 
 
+def test_mixed_bullets():
+    desc = r"""
+<!-- BEGIN RELEASE NOTES -->
+- solvers
+
+  - new solver
+
++ core
+
+  - faster core
+
+  * better stuff
+
+  + improved things
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'solvers': ['- new solver'],
+        'core': ['- faster core', '* better stuff', '+ improved things']
+    }
+
 def test_empty():
     desc = r"""
 <!-- Your title above should be a short description of what

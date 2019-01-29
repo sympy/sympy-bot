@@ -22,7 +22,7 @@ def get_valid_headers():
 
 def is_bullet(line):
     l = line.lstrip()
-    return l.startswith('* ') or l.startswith('- ')
+    return l.startswith('* ') or l.startswith('- ') or l.startswith('+ ')
 
 def get_changelog(pr_desc):
     """
@@ -66,8 +66,8 @@ def get_changelog(pr_desc):
             changelogs.clear()
             status = True
             break
-        elif line.startswith('* ') or line.startswith('- '):
-            header = line.lstrip('*- ')
+        elif line.startswith('* ') or line.startswith('- ') or line.startswith('+ '):
+            header = line.lstrip('*-+ ')
             header = header.strip()
             if header not in valid_headers:
                 status = False
@@ -124,7 +124,7 @@ def get_changelog(pr_desc):
                 changelogs[header][-1] += '\n' + ' '*(len_line_prefix - len(prefix)) + line.lstrip()
             elif line and not is_bullet(line):
                 message_list += [
-                    f'* The line `{line}` does not appear to have a valid Markdown bullet. Make sure it starts with `* ` or `- ` with a space after the bullet.',
+                    f'* The line `{line}` does not appear to have a valid Markdown bullet. Make sure it starts with `* `, `- `, or `+ ` with a space after the bullet.',
                 ]
                 status = False
                 break
