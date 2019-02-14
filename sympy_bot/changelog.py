@@ -128,6 +128,12 @@ def get_changelog(pr_desc):
                 ]
                 status = False
                 break
+            elif line.strip() and len(line) - len(line.lstrip()) < 2:
+                message_list += [
+                    f"* The line `{line}` is not indented far enough. Please add at least two spaces before indented bullet points."
+                ]
+                status = False
+                break
             else:
                 prefix = ' '*(len(line) - len(line.lstrip()))
                 changelogs[header].append(line.strip())

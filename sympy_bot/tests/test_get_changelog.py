@@ -35,7 +35,7 @@ NO ENTRY
     desc = """
 <!-- BEGIN RELEASE NOTES -->
 * solvers
- * new solver
+  * new solver
 
 NO ENTRY
 """
@@ -288,4 +288,17 @@ def test_bad_bullet():
     assert not status
     assert "*`_atomic` can recurse into arguments" in message
     assert "Markdown bullet" in message
+    assert not changelogs
+
+def test_bullet_not_indented_far_enough():
+    desc = r"""
+<!-- BEGIN RELEASE NOTES -->
+- solvers
+
+ - new solver
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "indented" in message
+    assert "- new solver" in message
     assert not changelogs
