@@ -302,3 +302,16 @@ def test_bullet_not_indented_far_enough():
     assert "indented" in message
     assert "- new solver" in message
     assert not changelogs
+
+def test_trailing_whitespace():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+- solvers \n\
+  \n\
+  - new solver \n\
+"""
+
+    status, message, changelogs = get_changelog(desc)
+    assert status, message
+    assert "good" in message
+    assert changelogs == {"solvers": ["- new solver"]}

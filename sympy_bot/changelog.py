@@ -122,7 +122,7 @@ def get_changelog(pr_desc):
                 # Multiline changelog
                 len_line_prefix = len(line) - len(line.lstrip())
                 changelogs[header][-1] += '\n' + ' '*(len_line_prefix - len(prefix)) + line.lstrip()
-            elif line and not is_bullet(line):
+            elif line.strip() and not is_bullet(line):
                 message_list += [
                     f'* The line `{line}` does not appear to have a valid Markdown bullet. Make sure it starts with `* `, `- `, or `+ ` with a space after the bullet.',
                 ]
