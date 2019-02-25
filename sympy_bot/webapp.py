@@ -31,7 +31,7 @@ async def main_post(request):
     # a representation of GitHub webhook event
     event = sansio.Event.from_http(request.headers, body, secret=secret)
 
-    print(f"{event.event} event with delivery_id={event.delivery_id}")
+    print(f"Received {event.event} event with delivery_id={event.delivery_id}")
     async with ClientSession() as session:
         gh = GitHubAPI(session, USER, oauth_token=oauth_token)
 
