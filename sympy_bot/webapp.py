@@ -234,7 +234,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
 
 The release notes on the [wiki]({release_notes_url}) have been updated.
 """
-                comment = await gh.post(comment['url'], data={"body": update_message})
+                comment = await gh.patch(comment['url'], data={"body": update_message})
             except RuntimeError as e:
                 await error_comment(event, gh, e.args[0])
                 raise
