@@ -46,13 +46,13 @@ def main():
     for m in re.finditer(r'https://github.com/sympy/sympy/pull/(\d+)', release_notes):
         PRs.add(m.group(1))
 
-    print(f"Found {len(PRs)} PRs, from #{min(PRs)} to #{max(PRs)}")
-
     login_kwargs = GitHub_login()
 
+    print(f"Found {len(PRs)} PRs, from #{min(PRs)} to #{max(PRs)}")
+
     pr_users = {}
-    for pr in sorted(PRs):
-        print(f"Getting PR #{pr}")
+    for i, pr in sorted(PRs):
+        print(f"Getting PR #{pr}: {i+1}/{len(PRs)}")
         pull_request = get(f'https://api.github.com/repos/sympy/sympy/pulls/{pr}', login_kwargs)
 
         users = set()
