@@ -245,7 +245,7 @@ async def test_status_good_new_comment(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -373,7 +373,7 @@ async def test_status_good_existing_comment(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -519,7 +519,7 @@ async def test_closed_with_merging(mocker, action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -680,7 +680,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -832,7 +832,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1011,7 +1011,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1164,7 +1164,7 @@ async def test_status_bad_new_comment(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1288,7 +1288,7 @@ async def test_status_bad_existing_comment(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1421,7 +1421,7 @@ async def test_rate_limit_comment(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1539,7 +1539,7 @@ async def test_header_in_message(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
@@ -1662,7 +1662,7 @@ async def test_bad_version_file(action):
         },
         # Test commits without a login
         {
-            'author': {},
+            'author': None,
             'commit': {
                 'message': "A good commit",
             },
