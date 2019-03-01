@@ -51,7 +51,7 @@ def main():
     print(f"Found {len(PRs)} PRs, from #{min(PRs)} to #{max(PRs)}")
 
     pr_users = {}
-    for i, pr in sorted(PRs):
+    for i, pr in enumerate(sorted(PRs)):
         print(f"Getting PR #{pr}: {i+1}/{len(PRs)}")
         pull_request = get(f'https://api.github.com/repos/sympy/sympy/pulls/{pr}', login_kwargs)
 
