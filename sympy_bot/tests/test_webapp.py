@@ -177,16 +177,19 @@ Note: This comment will be updated with the latest check if you edit the pull re
 
 
 @parametrize('action', ['closed', 'synchronize', 'edited'])
-async def test_closed_without_merging(action):
+@parametrize('merged', [True, False])
+async def test_no_action_on_closed_prs(action, merged):
+    if action == 'closed' and merged == True:
+        return
     gh = FakeGH()
     event_data = {
         'pull_request': {
             'number': 1,
             'state': 'closed',
-            'merged': False,
+            'merged': merged,
             },
         }
-    event_data['action'] = 'closed'
+    event_data['action'] = action
 
     event = _event(event_data)
 
