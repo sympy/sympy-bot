@@ -15,6 +15,22 @@ import requests
 
 from doctr.local import GitHub_login, GitHub_raise_for_status
 
+def reauth_GitHub_raise_for_status(r, login_kwargs):
+    if r.status_code == 401 and r.headers.get('X-GitHub-OTP'):
+        auth = login_kwargs['auth']
+        print("You must provide a new 2FA code")
+        login_kwargs.update(GitHub_login(username=auth.username, password=auth.password))
+    else:
+        GitHub_raise_for_status(r)
+
+def get(url, kwargs):
+    while True:
+        r = requests.get(url, **kwargs)
+        reauth_GitHub_raise_for_status(r, kwargs)
+        if r.status_code == 401 and r.headers.get('X-GitHub-OTP'):
+            continue
+        return r
+
 def main():
     if len(sys.argv) != 2 or sys.argv[1] in ['-h', '--help']:
         print("Provide the path to the release notes page you want to fix.")
@@ -37,13 +53,11 @@ def main():
     pr_users = {}
     for pr in sorted(PRs):
         print(f"Getting PR #{pr}")
-        pull_request = requests.get(f'https://api.github.com/repos/sympy/sympy/pulls/{pr}', **login_kwargs)
-        GitHub_raise_for_status(pull_request)
+        pull_request = get(f'https://api.github.com/repos/sympy/sympy/pulls/{pr}', login_kwargs)
 
         users = set()
         commits_url = pull_request.json()['commits_url']
-        commits = requests.get(commits_url, **login_kwargs)
-        GitHub_raise_for_status(commits)
+        commits = get(commits_url, login_kwargs)
         for commit in commits.json():
             if commit['author']:
                 users.add(commit['author']['login'])
