@@ -593,7 +593,7 @@ async def test_closed_with_merging(mocker, action):
     }]
     # Comments data
     assert patch_urls == [existing_comment_url, existing_comment_url]
-    'https://github.com/sympy/sympy/pulls/1(patch_data) == '
+    assert len(patch_data) == 2
     assert patch_data[0].keys() == {"body"}
     comment = patch_data[0]["body"]
     assert comment_body == comment
@@ -777,7 +777,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     }
     # Comments data
     assert patch_urls == [existing_comment_url]
-    'https://github.com/sympy/sympy/pulls/1(patch_data) == '
+    assert len(patch_data) == 1
     assert patch_data[0].keys() == {"body"}
     comment = patch_data[0]["body"]
     assert comment_body == comment
