@@ -171,7 +171,9 @@ def get_release_notes_filename(version):
     v = VERSION_RE.match(version).group()
     return 'Release-Notes-for-' + v + '.md'
 
-def format_change(change, pr_number, authors):
+def format_authors(authors):
+    authors = sorted(authors, key=str.lower)
+
     if len(authors) == 1:
         authors_info = AUTHOR.format(author=authors[0])
     elif len(authors) == 2:
@@ -179,6 +181,11 @@ def format_change(change, pr_number, authors):
     else:
         authors_info = ", ".join([AUTHOR.format(author=author) for author
             in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
+
+    return authors_info
+
+def format_change(change, pr_number, authors):
+    authors_info = format_authors(authors)
 
     indent = ' '
     if '\n\n' in change or "```" in change:
@@ -198,7 +205,6 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
 
     valid_headers = get_valid_headers()
     changelogs = changelogs.copy()
-    authors = sorted(authors)
 
     lines = iter(rel_notes_txt.splitlines())
     for line in lines:
