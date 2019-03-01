@@ -16,14 +16,12 @@ import requests
 from doctr.local import GitHub_login, GitHub_raise_for_status
 
 def main():
-    print("Please clone the SymPy wiki repo (git@github.com:sympy/sympy.wiki.git).")
-    print("Input the path to the release notes page you want to fix in the cloned wiki repo.")
-    try:
-        from prompt_toolkit import prompt
-        from prompt_toolkit.completion import PathCompleter
-        release_notes_file = prompt("Release notes file: ", completer=PathCompleter(expanduser=True))
-    except ImportError:
-        release_notes_file = input("Release notes file: ")
+    if len(sys.argv) != 2 or sys.argv[1] in ['-h', '--help']:
+        print("Provide the path to the release notes page you want to fix.")
+        print("You will need to clone the SymPy wiki repo (git clone git@github.com:sympy/sympy.wiki.git).")
+        sys.exit(1)
+
+    release_notes_file = sys.argv[1]
 
     with open(release_notes_file) as f:
         release_notes = f.read()
