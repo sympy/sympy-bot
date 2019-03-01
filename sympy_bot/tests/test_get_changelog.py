@@ -275,6 +275,7 @@ automatically to see if they are formatted correctly. -->
     status, message, changelogs = get_changelog(desc)
     assert not status
     assert 'No release notes were found' in message
+    assert "<!-- BEGIN RELEASE NOTES -->" in message
     assert not changelogs
 
 def test_bad_bullet():
@@ -315,3 +316,24 @@ def test_trailing_whitespace():
     assert status, message
     assert "good" in message
     assert changelogs == {"solvers": ["- new solver"]}
+
+def test_no_changelog():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+
+<!-- END RELEASE NOTES -->
+    """
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "No release notes were found" in message
+    assert "<!-- BEGIN RELEASE NOTES -->" in message
+    assert not changelogs
+
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+    """
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "No release notes were found" in message
+    assert "<!-- BEGIN RELEASE NOTES -->" in message
+    assert not changelogs
