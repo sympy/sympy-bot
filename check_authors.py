@@ -30,6 +30,8 @@ def main():
     for m in re.finditer(r'https://github.com/sympy/sympy/pull/(\d+)', release_notes):
         PRs.add(m.group(1))
 
+    print(f"Found {len(PRs)} PRs, from #{min(PRs)} to #{max(PRs)}")
+
     login_kwargs = GitHub_login()
 
     pr_users = {}
