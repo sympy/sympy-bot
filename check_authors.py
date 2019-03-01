@@ -69,7 +69,17 @@ def main():
 
     for pr, users in sorted(pr_users.items()):
         if len(users) > 1:
-            print(f"Authors for #{pr}: {format_authors(sorted(users))}")
+            authors = format_authors(sorted(users))
+            print(f"Fixing authors for #{pr}: {authors}")
+            release_re = rf'(?m)(\(\[#{pr}\]\(https://github.com/sympy/sympy/pull/{pr}\) by ).*\)$'
+            repl = rf'\1{authors}'
+            release_notes, n = re.subn(release_re, repl, release_notes)
+            if n == 0:
+                print(f"WARNING: Could not fix the authors for PR #{pr}.")
+
+    print("Updating the release notes file.")
+    with open(release_notes_file, 'w') as f:
+        f.write(release_notes)
 
 AUTHOR = "[@{author}](https://github.com/{author})"
 
