@@ -13,6 +13,8 @@ import re
 
 import requests
 
+from sympy_bot.changelog import format_authors
+
 from doctr.local import GitHub_login, GitHub_raise_for_status
 
 def reauth_GitHub_raise_for_status(r, login_kwargs):
@@ -81,18 +83,6 @@ def main():
     print("Updating the release notes file.")
     with open(release_notes_file, 'w') as f:
         f.write(release_notes)
-
-AUTHOR = "[@{author}](https://github.com/{author})"
-
-def format_authors(authors):
-    if len(authors) == 1:
-        authors_info = AUTHOR.format(author=authors[0])
-    elif len(authors) == 2:
-        authors_info = AUTHOR.format(author=authors[0]) + " and " + AUTHOR.format(author=authors[1])
-    else:
-        authors_info = ", ".join([AUTHOR.format(author=author) for author
-            in authors[:-1]]) + ', and ' + AUTHOR.format(author=authors[-1])
-    return authors_info
 
 if __name__ == '__main__':
     sys.exit(main())
