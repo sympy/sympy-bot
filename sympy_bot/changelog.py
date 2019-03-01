@@ -139,7 +139,7 @@ def get_changelog(pr_desc):
                 changelogs[header].append(line.strip())
     else:
         if not changelogs:
-            message_list += [f'* No release notes were detected. Please edit the PR description and write the release notes under `{BEGIN_RELEASE_NOTES}`.']
+            message_list += [f'* No release notes were found. Please edit the PR description and write the release notes under `{BEGIN_RELEASE_NOTES}`.']
             status = False
 
     for header in changelogs:
@@ -157,7 +157,7 @@ def get_changelog(pr_desc):
     if not message_list:
         if not changelogs:
             status = False
-            message_list = ["*  No release notes were found. Please add release notes to the pull request description."]
+            message_list = [f'* No release notes were found. Please edit the PR description and write the release notes under `{BEGIN_RELEASE_NOTES}`.']
         else:
             message_list = ["Your release notes are in good order."]
     if not status:
