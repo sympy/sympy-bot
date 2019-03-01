@@ -48,10 +48,10 @@ def main():
 
     login_kwargs = GitHub_login()
 
-    print(f"Found {len(PRs)} PRs, from #{min(PRs)} to #{max(PRs)}")
+    print(f"Found {len(PRs)} PRs, from #{min(PRs, key=int)} to #{max(PRs, key=int)}")
 
     pr_users = {}
-    for i, pr in enumerate(sorted(PRs)):
+    for i, pr in enumerate(sorted(PRs, key=int)):
         print(f"Getting PR #{pr}: {i+1}/{len(PRs)}")
         pull_request = get(f'https://api.github.com/repos/sympy/sympy/pulls/{pr}', login_kwargs)
 
@@ -67,9 +67,10 @@ def main():
 
         pr_users[pr] = users
 
-    for pr, users in sorted(pr_users.items()):
+    for pr in sorted(pr_users, key=int):
+        users = pr_users[pr]
         if len(users) > 1:
-            authors = format_authors(sorted(users))
+            authors = format_authors(sorted(users, key=str.lower))
             print(f"Fixing authors for #{pr}: {authors}")
             release_re = rf'(?m)(\(\[#{pr}\]\(https://github.com/sympy/sympy/pull/{pr}\) by ).*\)$'
             repl = rf'\1{authors}'
