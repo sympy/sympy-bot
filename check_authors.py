@@ -69,7 +69,7 @@ def main():
 
     for pr, users in sorted(pr_users.items()):
         if len(users) > 1:
-            print(f"Authors for #{pr}: {format_authors(users)}")
+            print(f"Authors for #{pr}: {format_authors(sorted(users))}")
 
 AUTHOR = "[@{author}](https://github.com/{author})"
 
