@@ -82,8 +82,8 @@ async def pull_request_comment(event, gh):
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
 
-    if not users:
-        users = {event.data['pull_request']['head']['user']['login']}
+
+    users.add(event.data['pull_request']['head']['user']['login'])
 
     users = sorted(users)
     contents_url = event.data['pull_request']['base']['repo']['contents_url']

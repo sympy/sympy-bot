@@ -64,8 +64,7 @@ def main():
             if commit['author']:
                 users.add(commit['author']['login'])
 
-        if not users:
-            users = {pull_request.json()['head']['user']['login']}
+        users.add(pull_request.json()['head']['user']['login'])
 
         pr_users[pr] = users
 
