@@ -4,7 +4,6 @@
 # the release notes. Each line should have one valid header. Blank lines and
 # lines that that start with a # are ignored.
 
-complexanalysis
 algebras
 assumptions
 benchmarks
@@ -12,6 +11,7 @@ calculus
 categories
 codegen
 combinatorics
+complexanalysis
 concrete
 core
 crypto
