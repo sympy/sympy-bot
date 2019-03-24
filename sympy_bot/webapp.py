@@ -110,6 +110,7 @@ async def pull_request_comment(event, gh):
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
         try:
+            print(f"Using ref {base_ref}")
             release_file = await gh.getitem(version_url, {'ref': base_ref})
             m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
         except BadRequest: # file not found
