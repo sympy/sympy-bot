@@ -121,7 +121,8 @@ release_notes_file = 'Release-Notes-for-1.2.1.md'
 comments_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/comments'
 commits_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/commits'
 contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
-version_url = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py'
+version_url_template = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py?ref={ref}'
+version_url = version_url_template.format(ref='master')
 html_url = "https://github.com/sympy/sympy"
 wiki_url = "https://github.com/sympy/sympy.wiki"
 comment_html_url = 'https://github.com/sympy/sympy/pulls/1#issuecomment-1'
@@ -216,6 +217,7 @@ async def test_status_good_new_comment(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -344,6 +346,7 @@ async def test_status_good_existing_comment(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -490,6 +493,7 @@ async def test_closed_with_merging(mocker, action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -651,6 +655,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description_no_entry,
             'statuses_url': statuses_url,
@@ -803,6 +808,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -982,6 +988,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': invalid_PR_description,
             'statuses_url': statuses_url,
@@ -1135,6 +1142,7 @@ async def test_status_bad_new_comment(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': invalid_PR_description,
             'statuses_url': statuses_url,
@@ -1259,6 +1267,7 @@ async def test_status_bad_existing_comment(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': invalid_PR_description,
             'statuses_url': statuses_url,
@@ -1392,6 +1401,7 @@ async def test_rate_limit_comment(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -1505,6 +1515,7 @@ async def test_header_in_message(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -1633,6 +1644,7 @@ async def test_bad_version_file(action):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
@@ -1764,6 +1776,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
                     'contents_url': contents_url,
                     'html_url': html_url,
                 },
+                'ref': 'master',
             },
             'body': valid_PR_description,
             'statuses_url': statuses_url,
