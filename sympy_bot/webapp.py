@@ -86,9 +86,10 @@ async def pull_request_comment(event, gh):
     users.add(event.data['pull_request']['head']['user']['login'])
 
     users = sorted(users)
-    contents_url = event.data['pull_request']['base']['repo']['contents_url']
 
+    contents_url = event.data['pull_request']['base']['repo']['contents_url']
     version_url = contents_url.replace('{+path}', RELEASE_FILE)
+    base_ref = event.data['pull_request']['base']['ref']
 
     comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
@@ -109,7 +110,7 @@ async def pull_request_comment(event, gh):
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
         try:
-            release_file = await gh.getitem(version_url)
+            release_file = await gh.getitem(version_url, {'ref': base_ref})
             m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
         except BadRequest: # file not found
             m = False
