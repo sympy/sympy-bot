@@ -1880,3 +1880,134 @@ async def test_no_user_logins_in_commits(action, include_extra):
     }
     assert patch_urls == []
     assert patch_data == []
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_status_good_new_comment_other_base(action):
+    # Based on test_status_good_new_comment
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': '1.4',
+            },
+            'body': valid_PR_description,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+        },
+        {
+            'author': {
+                'login': 'certik',
+            },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+        },
+        # Test commits without a login
+        {
+            'author': None,
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+        },
+    ]
+
+    # No comment from sympy-bot
+    comments = [
+        {
+            'user': {
+                'login': 'asmeurer',
+            },
+        },
+        {
+            'user': {
+                'login': 'certik',
+            },
+        },
+    ]
+
+    version_file = {
+        'content': base64.b64encode(b'__version__ = "1.4rc1"\n'),
+        }
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {
+        version_url_template.format(ref='1.4'): version_file,
+    }
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
+
+    assert getiter_urls == list(getiter)
+    assert getitem_urls == list(getitem)
+    assert post_urls == [comments_url, statuses_url]
+    assert len(post_data) == 2
+    # Comments data
+    assert post_data[0].keys() == {"body"}
+    comment = post_data[0]["body"]
+    assert ":white_check_mark:" in comment
+    assert ":x:" not in comment
+    assert "new trig solvers" in comment
+    assert "error" not in comment
+    assert "https://github.com/sympy/sympy-bot" in comment
+    assert '1.2.1' not in comment
+    assert '1.4' in comment
+    for line in valid_PR_description:
+        assert line in comment
+    assert "good order" in comment
+    # Statuses data
+    assert post_data[1] == {
+        "state": "success",
+        "target_url": comment_html_url,
+        "description": "The release notes look OK",
+        "context": "sympy-bot/release-notes",
+    }
+    assert patch_urls == []
+    assert patch_data == []
