@@ -106,3 +106,10 @@ The test will only be run on Travis builds on branches pushed to this repo (it
 won't run on branches pushed to forks). Thus, if you make any changes to this
 code, someone with push access will need to push your branch up to the main
 repo in order for it to be tested.
+
+To debug webhooks, you can go to the webhooks settings for the repo the bot is
+set up on (e.g., https://github.com/sympy/sympy/settings/hooks), and click the
+webhook for https://sympy-bot.herokuapp.com/. This will show you all recent
+webhooks that were delivered, with the exact JSON that was delivered as well
+as the headers and the response. Each webhook has a corresponding UUID (the
+delivery id), which is printed by the bot in the logs when it receives it.
