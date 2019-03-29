@@ -69,12 +69,12 @@ Next, you need to set up the bot on GitHub. To do so, follow these steps:
    have tried playing with using reviews instead of statuses, but I couldn't
    get it to work.
 
-Run
+4. Run
 
-    heroku labs:enable runtime-dyno-metadata -a sympy-bot
+       heroku labs:enable runtime-dyno-metadata -a sympy-bot
 
-to enable the bot version environment variable (run this if the version is
-"version not found!").
+   to enable the bot version environment variable (run this if the version is
+   "version not found!").
 
 ## Testing
 
