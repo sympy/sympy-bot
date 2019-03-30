@@ -69,12 +69,12 @@ Next, you need to set up the bot on GitHub. To do so, follow these steps:
    have tried playing with using reviews instead of statuses, but I couldn't
    get it to work.
 
-Run
+4. Run
 
-    heroku labs:enable runtime-dyno-metadata -a sympy-bot
+       heroku labs:enable runtime-dyno-metadata -a sympy-bot
 
-to enable the bot version environment variable (run this if the version is
-"version not found!").
+   to enable the bot version environment variable (run this if the version is
+   "version not found!").
 
 ## Testing
 
@@ -89,6 +89,7 @@ https://dashboard.heroku.com/apps/sympy-bot-testing/deploy/github and manually
 deploy the branch. You can also enable automatic deployments for the branch if
 you want to do many tests against it.
 
+### Wiki Push Test
 On Travis, there is a test that the wiki updates properly, which tests against
 https://github.com/sympy/sympy-bot/wiki/Release-Notes-Tests. This requires a
 personal access token to be installed on Travis.
@@ -107,6 +108,8 @@ The test will only be run on Travis builds on branches pushed to this repo (it
 won't run on branches pushed to forks). Thus, if you make any changes to this
 code, someone with push access will need to push your branch up to the main
 repo in order for it to be tested.
+
+### Debugging Webhooks
 
 To debug webhooks, you can go to the webhooks settings for the repo the bot is
 set up on (e.g., https://github.com/sympy/sympy/settings/hooks), and click the
