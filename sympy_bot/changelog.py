@@ -188,7 +188,7 @@ def format_change(change, pr_number, authors):
     authors_info = format_authors(authors)
 
     indent = ' '
-    if '\n\n' in change or "```" in change:
+    if '\n\n' in change or ("```" in change and '\n' in change):
         change += '\n\n'
         indent = '  '
 

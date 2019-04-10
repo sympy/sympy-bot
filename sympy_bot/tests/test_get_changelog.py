@@ -165,6 +165,20 @@ def test_multiline():
         'core': ['* core change'],
     }
 
+def test_threebackticks_not_multiline():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+* crypto
+  * added ```rot13``` and ```atbash``` ciphers
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert status
+    assert "good" in message
+    assert changelogs == {
+        'crypto': ['* added ```rot13``` and ```atbash``` ciphers'],
+        }
+
 def test_multiple_multiline():
     # from sympy/sympy#14758, see #14
     desc = """
