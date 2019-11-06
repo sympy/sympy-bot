@@ -291,7 +291,6 @@ async def pull_request_assign_issue(event, gh):
     for m in FIXES_ISSUE.finditer(body):
         fixed_issues.add(m.group(1))
 
-    print(f"DEBUG: fixed issues={fixed_issues}")
     async for commit in commits:
         message = commit['commit']['message']
         for m in FIXES_ISSUE.finditer(message):
