@@ -309,7 +309,7 @@ async def _pull_request_assign(event, gh, assign):
         assignees_url = issues_url.replace('{/number}', f'/{issue_number}') + '/assignees'
         if assign == 'assign':
             print(f"PR #{number}: Assigning @{user} to issue #{issue_number}")
-            gh.post(assignees_url, data=dict(assignees=[user]))
+            await gh.post(assignees_url, data=dict(assignees=[user]))
         else:
             print(f"PR #{number}: Unassigning @{user} to issue #{issue_number}")
-            gh.delete(assignees_url, data=dict(assignees=[user]))
+            await gh.delete(assignees_url, data=dict(assignees=[user]))
