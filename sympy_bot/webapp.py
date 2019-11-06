@@ -278,7 +278,7 @@ The error message was: {message}
         context='sympy-bot/release-notes',
     ))
 
-FIXES_ISSUE = re.compile(r'(?:fixes|closes) +#(\d+)')
+FIXES_ISSUE = re.compile(r'(?:fixes|closes) +#(\d+)', re.I)
 
 async def pull_request_assign_issue(event, gh):
     commits_url = event.data["pull_request"]["commits_url"]
