@@ -3,6 +3,7 @@ import datetime
 import os
 import base64
 from subprocess import CalledProcessError
+import re
 
 from aiohttp import web, ClientSession
 
@@ -65,6 +66,8 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         return
 
     await pull_request_comment(event, gh)
+
+    await pull_request_assign_issue(event, gh)
 
 async def pull_request_comment(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
@@ -274,3 +277,28 @@ The error message was: {message}
         description='There was an error updating the release notes on the wiki.',
         context='sympy-bot/release-notes',
     ))
+
+FIXES_ISSUE = re.compile(r'(?:fixes|closes) +#(\d+)')
+
+async def pull_request_assign_issue(event, gh):
+    commits_url = event.data["pull_request"]["commits_url"]
+    commits = gh.getiter(commits_url)
+    user = event.data['pull_request']['user']['login']
+    body = event.data['pull_request']['body']
+    number = event.data["pull_request"]["number"]
+    fixed_issues = set()
+
+    for m in FIXES_ISSUE.finditer(body):
+        fixed_issues.add(m.group(1))
+
+    async for commit in commits:
+        message = commit['commit']['message']
+        for m in FIXES_ISSUE.finditer(message):
+            fixed_issues.add(m.group(1))
+
+    issues_url = event.data['pull_request']['base']['repo']['issues_url']
+
+    for issue_number in sorted(fixed_issues):
+        print(f"#{number}: Assigning {user} to issue {issue_number}")
+        gh.post(issues_url.replace('{/number}', issue_number) + 'assignees',
+                data=dict(assignees=[user]))
