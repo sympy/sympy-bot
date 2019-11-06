@@ -67,7 +67,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     await pull_request_comment(event, gh)
 
-    await pull_request_assign_issue(event, gh)
+    await pull_request_assign_issues(event, gh)
 
 async def pull_request_comment(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
@@ -211,7 +211,8 @@ async def pull_request_closed(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
     print(f"PR #{pr_number} was {event.data['action']}.")
     if not event.data['pull_request']['merged']:
-        print(f"PR #{pr_number} was closed without merging, skipping")
+        await pull_request_unassign_issues(event, gh)
+        print(f"PR #{pr_number} was closed without merging, skipping release notes processing")
         return
 
     status, release_notes_file, changelogs, comment, users = await pull_request_comment(event, gh, *args, **kwargs)
@@ -280,7 +281,13 @@ The error message was: {message}
 
 FIXES_ISSUE = re.compile(r'(?:fixes|closes) +#(\d+)', re.I)
 
-async def pull_request_assign_issue(event, gh):
+async def pull_request_assign_issues(event, gh):
+    await _pull_request_assign(event, gh, 'assign')
+
+async def pull_request_unassign_issues(event, gh):
+    await _pull_request_assign(event, gh, 'unassign')
+
+async def _pull_request_assign(event, gh, assign):
     commits_url = event.data["pull_request"]["commits_url"]
     commits = gh.getiter(commits_url)
     user = event.data['pull_request']['user']['login']
@@ -299,6 +306,10 @@ async def pull_request_assign_issue(event, gh):
     issues_url = event.data['pull_request']['base']['repo']['issues_url']
 
     for issue_number in sorted(fixed_issues):
-        print(f"#{number}: Assigning {user} to issue {issue_number}")
-        await gh.post(issues_url.replace('{/number}', f'/{issue_number}') + '/assignees',
-                      data=dict(assignees=[user]))
+        assignees_url = issues_url.replace('{/number}', f'/{issue_number}') + '/assignees'
+        if assign == 'assign':
+            print(f"PR #{number}: Assigning @{user} to issue #{issue_number}")
+            gh.post(assignees_url, data=dict(assignees=[user]))
+        else:
+            print(f"PR #{number}: Unassigning @{user} to issue #{issue_number}")
+            gh.delete(assignees_url, data=dict(assignees=[user]))
