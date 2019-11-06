@@ -300,5 +300,6 @@ async def pull_request_assign_issue(event, gh):
 
     for issue_number in sorted(fixed_issues):
         print(f"#{number}: Assigning {user} to issue {issue_number}")
+        print(f"URL: {issues_url.replace('{/number}', issue_number) + 'assignees'}")
         await gh.post(issues_url.replace('{/number}', issue_number) + 'assignees',
                       data=dict(assignees=[user]))
