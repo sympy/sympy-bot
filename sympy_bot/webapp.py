@@ -308,7 +308,7 @@ async def _pull_request_assign(event, gh, assign):
     for issue_number in sorted(fixed_issues):
         issue_url = issues_url.replace('{/number}', f'/{issue_number}')
         assignees_url = issue_url + '/assignees'
-        if not await should_assign(event, gh, issue_url):
+        if not await should_assign(event, gh, user, issue_url):
             print(f"PR #{number}: Skipping {assign}ing of @{user} on issue #{issue_number} "
                   f"as they have previously been manually assigned/unassigned")
             continue
@@ -319,7 +319,7 @@ async def _pull_request_assign(event, gh, assign):
             print(f"PR #{number}: Unassigning @{user} to issue #{issue_number}")
             await gh.delete(assignees_url, data=dict(assignees=[user]))
 
-async def should_assign(event, gh, issue_url):
+async def should_assign(event, gh, user, issue_url):
     # Required to make the timelines API work.
     # https://developer.github.com/v3/issues/timeline/
     accept = sansio.accept_format(version='mockingbird-preview')
@@ -327,6 +327,7 @@ async def should_assign(event, gh, issue_url):
     timeline_url = issue_url + '/timeline'
     async for event in gh.getiter(timeline_url, accept=accept):
         if (event['event'] in ['assigned', 'unassigned'] and
-            event['assignee']['login'] != 'sympy-bot'):
+            event['assignee']['login'] == user and
+            event['actor']['login'] != 'sympy-bot'):
             return False
     return True
