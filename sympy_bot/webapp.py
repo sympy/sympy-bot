@@ -309,7 +309,7 @@ async def _pull_request_assign(event, gh, assign):
         issue_url = issues_url.replace('{/number}', f'/{issue_number}')
         assignees_url = issue_url + '/assignees'
         if not await should_assign(event, gh, issue_url):
-            print(f"PR #{number}: Skipping {assign} of @{user} on issue #{issue_number} "
+            print(f"PR #{number}: Skipping {assign}ing of @{user} on issue #{issue_number} "
                   f"as they have previously been manually assigned/unassigned")
             continue
         if assign == 'assign':
