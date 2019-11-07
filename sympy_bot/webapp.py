@@ -325,7 +325,7 @@ async def should_assign(event, gh, issue_url):
     # headers = {"Accept": "application/vnd.github.mockingbird-preview"}
 
     timeline_url = issue_url + '/timeline'
-    async for event in gh.getitem(timeline_url):
+    async for event in gh.getiter(timeline_url):
         if (event['event'] in ['assigned', 'unassigned'] and
             event['assignee']['login'] != 'sympy-bot'):
             return False
