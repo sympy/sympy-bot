@@ -322,10 +322,10 @@ async def _pull_request_assign(event, gh, assign):
 async def should_assign(event, gh, issue_url):
     # Required to make the timelines API work.
     # https://developer.github.com/v3/issues/timeline/
-    # headers = {"Accept": "application/vnd.github.mockingbird-preview"}
+    accept = sansio.accept_format(version='mockingbird-preview')
 
     timeline_url = issue_url + '/timeline'
-    async for event in gh.getiter(timeline_url):
+    async for event in gh.getiter(timeline_url, accept=accept):
         if (event['event'] in ['assigned', 'unassigned'] and
             event['assignee']['login'] != 'sympy-bot'):
             return False
