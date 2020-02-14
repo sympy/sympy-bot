@@ -216,7 +216,7 @@ The following commits delete files:
 
 
         if existing_comment_added_deleted:
-            comment = await gh.patch(existing_comment_release_notes['url'], data={"body": added_deleted_message})
+            comment = await gh.patch(existing_comment_added_deleted['url'], data={"body": added_deleted_message})
         else:
             comment = await gh.post(comments_url, data={"body": added_deleted_message})
 
