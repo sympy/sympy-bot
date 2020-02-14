@@ -86,7 +86,6 @@ async def pull_request_comment(event, gh):
             header_in_message = commit['sha']
 
         com = await gh.getitem(commit['url'])
-        print(com)
         for file in com['files']:
             if file['status'] == 'added':
                 added[com['sha']] = file
@@ -95,7 +94,7 @@ async def pull_request_comment(event, gh):
 
     if added:
         print("Files added:")
-        for sha, files in added.values():
+        for sha, files in added.items():
             print(sha)
             for file in files:
                 print(file['filename'])
@@ -104,7 +103,7 @@ async def pull_request_comment(event, gh):
 
     if deleted:
         print("Files deleted:")
-        for sha, files in deleted.values():
+        for sha, files in deleted.items():
             print(sha)
             for file in files:
                 print(file['filename'])
