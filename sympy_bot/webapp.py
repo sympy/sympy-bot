@@ -201,18 +201,18 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'
 The following commits add new files:
 """
         for sha, files in added.items():
-            added_deleted_message += f"{sha}:\n"
+            added_deleted_message += f"* {sha}:\n"
             for file in files:
-                added_deleted_message += f" - {file['filename']}\n"
+                added_deleted_message += f"  - `{file['filename']}`\n"
 
         if deleted:
             added_deleted_message += f"""
 The following commits delete files:
 """
         for sha, files in deleted.items():
-            added_deleted_message += f"{sha}:\n"
+            added_deleted_message += f"* {sha}:\n"
             for file in files:
-                added_deleted_message += f" - {file['filename']}\n"
+                added_deleted_message += f"  - `{file['filename']}`\n"
 
 
         if existing_comment_added_deleted:
