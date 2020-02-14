@@ -75,13 +75,38 @@ async def pull_request_comment(event, gh):
     commits = gh.getiter(commits_url)
     users = set()
     header_in_message = False
+    added = {}
+    deleted = {}
+
     async for commit in commits:
         if commit['author']:
             users.add(commit['author']['login'])
         message = commit['commit']['message']
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
+        for file in commit['files']:
+            if file['status'] == 'added':
+                added[commit['sha']] = file
+            elif file['status'] == 'deleted':
+                deleted[commit['sha']] = file
 
+    if added:
+        print("Files added:")
+        for sha, files in added.values():
+            print(sha)
+            for file in files:
+                print(file['filename'])
+    else:
+        print("No files added")
+
+    if deleted:
+        print("Files deleted:")
+        for sha, files in deleted.values():
+            print(sha)
+            for file in files:
+                print(file['filename'])
+    else:
+        print("No files deleted")
 
     users.add(event.data['pull_request']['head']['user']['login'])
 
