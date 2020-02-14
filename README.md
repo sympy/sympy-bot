@@ -117,3 +117,13 @@ webhook for https://sympy-bot.herokuapp.com/. This will show you all recent
 webhooks that were delivered, with the exact JSON that was delivered as well
 as the headers and the response. Each webhook has a corresponding UUID (the
 delivery id), which is printed by the bot in the logs when it receives it.
+
+## Rate Limits
+
+GitHub has a rate limit of 5000 requests per hour. A single bot action may
+result in multiple API requests. You can see the current rate limit and when
+it resets at https://sympy-bot.herokuapp.com/. If the bot detects that its
+rate limits are getting very low, it will post a warning comment on a pull
+request. Right now, the bot doesn't use the API very much, so we never get
+near the rate limits, unless someone were to attempt to spam it. However, in
+the future, this could become an issue if the bot is made to do more stuff.
