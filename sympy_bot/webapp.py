@@ -3,6 +3,7 @@ import datetime
 import os
 import base64
 from subprocess import CalledProcessError
+from collections import defaultdict
 
 from aiohttp import web, ClientSession
 
@@ -75,8 +76,8 @@ async def pull_request_comment(event, gh):
     commits = gh.getiter(commits_url)
     users = set()
     header_in_message = False
-    added = {}
-    deleted = {}
+    added = defaultdict(list)
+    deleted = defaultdict(list)
 
     async for commit in commits:
         if commit['author']:
@@ -88,9 +89,9 @@ async def pull_request_comment(event, gh):
         com = await gh.getitem(commit['url'])
         for file in com['files']:
             if file['status'] == 'added':
-                added[com['sha']] = file
+                added[com['sha']].append(file)
             elif file['status'] == 'deleted':
-                deleted[com['sha']] = file
+                deleted[com['sha']].append(file)
 
     if added:
         print("Files added:")
