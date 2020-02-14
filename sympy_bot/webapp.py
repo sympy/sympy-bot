@@ -84,6 +84,7 @@ async def pull_request_comment(event, gh):
         message = commit['commit']['message']
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
+        print(commit.keys())
         for file in commit['files']:
             if file['status'] == 'added':
                 added[commit['sha']] = file
