@@ -214,6 +214,11 @@ The following commits delete files:
             for file in files:
                 added_deleted_message += f"  - `{file['filename']}`\n"
 
+        added_deleted_message += f"""
+If these files were added/deleted on purpose, you can ignore this message.
+"""
+        # TODO: Allow users to whitelist files by @mentioning the bot. Then we
+        # could make this give a failing status.
 
         if existing_comment_added_deleted:
             comment = await gh.patch(existing_comment_added_deleted['url'], data={"body": added_deleted_message})
