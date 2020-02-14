@@ -92,26 +92,6 @@ async def pull_request_comment(event, gh):
                 added[com['sha']].append(file)
             elif file['status'] == 'removed':
                 deleted[com['sha']].append(file)
-            # else:
-            #     print(f"{file['filename']} was {file['status']} in {com['sha']}")
-
-    if added:
-        print("Files added:")
-        for sha, files in added.items():
-            print(sha)
-            for file in files:
-                print(file['filename'])
-    else:
-        print("No files added")
-
-    if deleted:
-        print("Files deleted:")
-        for sha, files in deleted.items():
-            print(sha)
-            for file in files:
-                print(file['filename'])
-    else:
-        print("No files deleted")
 
     users.add(event.data['pull_request']['head']['user']['login'])
 
@@ -123,11 +103,17 @@ async def pull_request_comment(event, gh):
 
     comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
-    existing_comment = None
+    existing_comment_release_notes = None
+    existing_comment_added_deleted = None
+    mentioned = []
     async for comment in comments:
         if comment['user']['login'] == USER:
-            existing_comment = comment
-            break
+            if "release notes entry" in comment['body']:
+                existing_comment_release_notes = comment
+            elif "add or delete" in comment['body']:
+                existing_comment_added_deleted = comment
+        if f'@{USER}' in comment['body']:
+            mentioned.append(comment)
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
@@ -158,6 +144,7 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
     emoji_status = {
         True: ':white_check_mark:',
         False: ':x:',
+        None: '
         }
 
     if status:
@@ -184,16 +171,16 @@ There was an error processing the release notes, which most likely indicates a b
             if changelogs:
                 message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {release_notes_url}.'
 
-    PR_message = f"""\
+    release_notes_message = f"""\
 {emoji_status[status] if status else ''}
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 """
     if not status:
-        PR_message += f"{emoji_status[status]} There was an issue with the release notes. **Please do not close this pull request;** instead edit the description after reading the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes)."
+        release_notes_message += f"{emoji_status[status]} There was an issue with the release notes. **Please do not close this pull request;** instead edit the description after reading the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes)."
 
-    PR_message += f"""
+    release_notes_message += f"""
 
 {message}
 
@@ -204,10 +191,40 @@ Note: This comment will be updated with the latest check if you edit the pull re
 </details><p>
 """
 
-    if existing_comment:
-        comment = await gh.patch(existing_comment['url'], data={"body": PR_message})
+    if added or deleted:
+        added_deleted_message = f"""\
+### 🟠
+
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
+"""
+        if added:
+            added_deleted_message += f"""
+The following commits add new files:
+"""
+        for sha, files in added.items():
+            added_deleted_message += f"{sha}:\n"
+            for file in files:
+                added_deleted_message += f" - {file['filename']}\n"
+
+        if deleted:
+            added_deleted_message += f"""
+The following commits delete files:
+"""
+        for sha, files in deleted.items():
+            added_deleted_message += f"{sha}:\n"
+            for file in files:
+                added_deleted_message += f" - {file['filename']}\n"
+
+
+        if existing_comment_added_deleted:
+            comment = await gh.patch(existing_comment_release_notes['url'], data={"body": added_deleted_message})
+        else:
+            comment = await gh.post(comments_url, data={"body": added_deleted_message})
+
+    if existing_comment_release_notes:
+        comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
     else:
-        comment = await gh.post(comments_url, data={"body": PR_message})
+        comment = await gh.post(comments_url, data={"body": release_notes_message})
 
     statuses_url = event.data['pull_request']['statuses_url']
     await gh.post(statuses_url, data=dict(
