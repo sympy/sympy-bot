@@ -90,10 +90,10 @@ async def pull_request_comment(event, gh):
         for file in com['files']:
             if file['status'] == 'added':
                 added[com['sha']].append(file)
-            elif file['status'] == 'deleted':
+            elif file['status'] == 'removed':
                 deleted[com['sha']].append(file)
-            else:
-                print(f"{file['filename']} was {file['status']} in {com['sha']}")
+            # else:
+            #     print(f"{file['filename']} was {file['status']} in {com['sha']}")
 
     if added:
         print("Files added:")
