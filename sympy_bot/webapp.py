@@ -144,7 +144,6 @@ There was an error getting the version from the `{RELEASE_FILE}` file. Please op
     emoji_status = {
         True: ':white_check_mark:',
         False: ':x:',
-        None: '
         }
 
     if status:
