@@ -86,7 +86,6 @@ async def pull_request_comment(event, gh):
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
 
-        print('commit url', commit['url'])
         com = await gh.getitem(commit['url'])
         for file in com['files']:
             if file['status'] == 'added':
