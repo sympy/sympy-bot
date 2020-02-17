@@ -122,6 +122,8 @@ comments_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/comments'
 commits_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/commits'
 contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
 sha = 'a109f824f4cb2b1dd97cf832f329d59da00d609a'
+commit_url_template = 'https://api.github.com/repos/sympy/sympy/commits/{sha}'
+commit_url = commit_url_template.format(sha=sha)
 version_url_template = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py?ref={ref}'
 version_url = version_url_template.format(ref='master')
 html_url = "https://github.com/sympy/sympy"
@@ -236,6 +238,7 @@ async def test_status_good_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -245,6 +248,7 @@ async def test_status_good_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -253,8 +257,17 @@ async def test_status_good_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -281,6 +294,7 @@ async def test_status_good_new_comment(action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         comments_url: {
@@ -303,7 +317,7 @@ async def test_status_good_new_comment(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -355,7 +369,6 @@ async def test_status_good_existing_comment(action):
         'action': action,
     }
 
-
     commits = [
         {
             'author': {
@@ -365,6 +378,7 @@ async def test_status_good_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -374,6 +388,7 @@ async def test_status_good_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -382,8 +397,17 @@ async def test_status_good_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # Has comment from sympy-bot
     comments = [
@@ -392,16 +416,19 @@ async def test_status_good_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            "body": "comment",
         },
     ]
 
@@ -416,6 +443,7 @@ async def test_status_good_existing_comment(action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -441,7 +469,7 @@ async def test_status_good_existing_comment(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -512,6 +540,7 @@ async def test_closed_with_merging(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -521,6 +550,7 @@ async def test_closed_with_merging(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -529,8 +559,17 @@ async def test_closed_with_merging(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # Has comment from sympy-bot
     comments = [
@@ -539,16 +578,19 @@ async def test_closed_with_merging(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -563,6 +605,7 @@ async def test_closed_with_merging(mocker, action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -590,7 +633,7 @@ async def test_closed_with_merging(mocker, action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -664,6 +707,13 @@ async def test_closed_with_merging_no_entry(mocker, action):
         'action': action,
     }
 
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     commits = [
         {
@@ -674,6 +724,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -683,6 +734,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -691,6 +743,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
 
@@ -701,16 +754,19 @@ async def test_closed_with_merging_no_entry(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -725,6 +781,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -752,7 +809,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -827,6 +884,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -836,6 +894,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -844,8 +903,17 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # Has comment from sympy-bot
     comments = [
@@ -854,16 +922,19 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -878,6 +949,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -909,7 +981,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [statuses_url, comments_url, statuses_url]
     # Statuses data
     assert len(post_data) == 3
@@ -1007,6 +1079,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1016,6 +1089,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1024,8 +1098,17 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # Has comment from sympy-bot
     comments = [
@@ -1034,16 +1117,19 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -1052,7 +1138,9 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
         comments_url: comments,
     }
 
-    getitem = {}
+    getitem = {
+        commit_url: commit,
+    }
     post = {
         statuses_url: {},
         comments_url: {
@@ -1082,7 +1170,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits)
     assert post_urls == [statuses_url, comments_url, statuses_url]
     # Statuses data
     assert len(post_data) == 3
@@ -1161,6 +1249,7 @@ async def test_status_bad_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1170,6 +1259,7 @@ async def test_status_bad_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1178,8 +1268,17 @@ async def test_status_bad_new_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -1187,11 +1286,13 @@ async def test_status_bad_new_comment(action):
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -1200,7 +1301,9 @@ async def test_status_bad_new_comment(action):
         comments_url: comments,
     }
 
-    getitem = {}
+    getitem = {
+        commit_url: commit,
+    }
     post = {
         comments_url: {
             'html_url': comment_html_url,
@@ -1222,7 +1325,7 @@ async def test_status_bad_new_comment(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1286,6 +1389,7 @@ async def test_status_bad_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1295,6 +1399,7 @@ async def test_status_bad_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1303,8 +1408,17 @@ async def test_status_bad_existing_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # Has comment from sympy-bot
     comments = [
@@ -1313,16 +1427,19 @@ async def test_status_bad_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
+            'body': comment_body,
         },
         {
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -1331,7 +1448,9 @@ async def test_status_bad_existing_comment(action):
         comments_url: comments,
     }
 
-    getitem = {}
+    getitem = {
+        commit_url: commit,
+    }
     post = {
         statuses_url: {},
     }
@@ -1356,7 +1475,7 @@ async def test_status_bad_existing_comment(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits)
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -1420,6 +1539,7 @@ async def test_rate_limit_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1429,6 +1549,7 @@ async def test_rate_limit_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1437,8 +1558,17 @@ async def test_rate_limit_comment(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -1446,11 +1576,13 @@ async def test_rate_limit_comment(action):
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            "body": "comment",
         },
     ]
 
@@ -1465,6 +1597,7 @@ async def test_rate_limit_comment(action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         comments_url: {
@@ -1524,7 +1657,7 @@ async def test_header_in_message(action):
         'action': action,
     }
 
-
+    sha_1 = '174b8b37bc33e9eb29e710a233190d02a13bdb54'
     commits = [
         {
             'author': {
@@ -1538,7 +1671,8 @@ async def test_header_in_message(action):
 <!-- END RELEASE NOTES -->
 """
             },
-            'sha': '174b8b37bc33e9eb29e710a233190d02a13bdb54',
+            'sha': sha_1,
+            'url': commit_url_template.format(sha=sha_1)
         },
         {
             'author': {
@@ -1548,6 +1682,7 @@ async def test_header_in_message(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1556,8 +1691,17 @@ async def test_header_in_message(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -1565,11 +1709,13 @@ async def test_header_in_message(action):
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -1578,7 +1724,10 @@ async def test_header_in_message(action):
         comments_url: comments,
     }
 
-    getitem = {}
+    getitem = {
+        commit_url: commit,
+        commit_url_template.format(sha=sha_1): commit,
+    }
     post = {
         comments_url: {
             'html_url': comment_html_url,
@@ -1601,7 +1750,7 @@ async def test_header_in_message(action):
 
     # The rest is already tested in test_status_good_new_comment
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url_template.format(sha=sha_1)] + 2*[commit_url]
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1612,7 +1761,7 @@ async def test_header_in_message(action):
     assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     assert "good order" not in comment
-    assert "174b8b37bc33e9eb29e710a233190d02a13bdb54" in comment
+    assert sha_1 in comment
     assert "<!-- BEGIN RELEASE NOTES -->" in comment
     assert "<!-- END RELEASE NOTES -->" in comment
     # Statuses data
@@ -1663,6 +1812,7 @@ async def test_bad_version_file(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1672,6 +1822,7 @@ async def test_bad_version_file(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1680,8 +1831,17 @@ async def test_bad_version_file(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -1708,6 +1868,7 @@ async def test_bad_version_file(action):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         comments_url: {
@@ -1730,7 +1891,7 @@ async def test_bad_version_file(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1793,8 +1954,18 @@ async def test_no_user_logins_in_commits(action, include_extra):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
+
     if include_extra:
         commits += [
             {
@@ -1805,6 +1976,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
                     'message': "A good commit",
                 },
                 'sha': sha,
+                'url': commit_url,
             },
         ]
 
@@ -1814,11 +1986,13 @@ async def test_no_user_logins_in_commits(action, include_extra):
             'user': {
                 'login': 'asmeurer',
             },
+            'body': "comment",
         },
         {
             'user': {
                 'login': 'certik',
             },
+            'body': "comment",
         },
     ]
 
@@ -1833,6 +2007,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
 
     getitem = {
         version_url: version_file,
+        commit_url: commit,
     }
     post = {
         comments_url: {
@@ -1855,7 +2030,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url]
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1920,6 +2095,7 @@ async def test_status_good_new_comment_other_base(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         {
             'author': {
@@ -1929,6 +2105,7 @@ async def test_status_good_new_comment_other_base(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
         # Test commits without a login
         {
@@ -1937,8 +2114,17 @@ async def test_status_good_new_comment_other_base(action):
                 'message': "A good commit",
             },
             'sha': sha,
+            'url': commit_url,
         },
     ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ]
+    }
 
     # No comment from sympy-bot
     comments = [
@@ -1965,6 +2151,7 @@ async def test_status_good_new_comment_other_base(action):
 
     getitem = {
         version_url_template.format(ref='1.4'): version_file,
+        commit_url: commit,
     }
     post = {
         comments_url: {
@@ -1987,7 +2174,7 @@ async def test_status_good_new_comment_other_base(action):
     patch_data = gh.patch_data
 
     assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert getitem_urls == [commit_url]*len(commits) + [version_url_template.format(ref='1.4')]
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
