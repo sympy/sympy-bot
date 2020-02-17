@@ -121,6 +121,7 @@ release_notes_file = 'Release-Notes-for-1.2.1.md'
 comments_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/comments'
 commits_url = 'https://api.github.com/repos/sympy/sympy/pulls/1/commits'
 contents_url = 'https://api.github.com/repos/sympy/sympy/contents/{+path}'
+sha = 'a109f824f4cb2b1dd97cf832f329d59da00d609a'
 version_url_template = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py?ref={ref}'
 version_url = version_url_template.format(ref='master')
 html_url = "https://github.com/sympy/sympy"
@@ -234,7 +235,7 @@ async def test_status_good_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -243,7 +244,7 @@ async def test_status_good_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -251,7 +252,7 @@ async def test_status_good_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -363,7 +364,7 @@ async def test_status_good_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -372,7 +373,7 @@ async def test_status_good_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -380,7 +381,7 @@ async def test_status_good_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -510,7 +511,7 @@ async def test_closed_with_merging(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -519,7 +520,7 @@ async def test_closed_with_merging(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -527,7 +528,7 @@ async def test_closed_with_merging(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -672,7 +673,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -681,7 +682,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -689,7 +690,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -825,7 +826,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -834,7 +835,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -842,7 +843,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1005,7 +1006,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1014,7 +1015,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1022,7 +1023,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1159,7 +1160,7 @@ async def test_status_bad_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1168,7 +1169,7 @@ async def test_status_bad_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1176,7 +1177,7 @@ async def test_status_bad_new_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1284,7 +1285,7 @@ async def test_status_bad_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1293,7 +1294,7 @@ async def test_status_bad_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1301,7 +1302,7 @@ async def test_status_bad_existing_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1418,7 +1419,7 @@ async def test_rate_limit_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1427,7 +1428,7 @@ async def test_rate_limit_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1435,7 +1436,7 @@ async def test_rate_limit_comment(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1546,7 +1547,7 @@ async def test_header_in_message(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1554,7 +1555,7 @@ async def test_header_in_message(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1661,7 +1662,7 @@ async def test_bad_version_file(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1670,7 +1671,7 @@ async def test_bad_version_file(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1678,7 +1679,7 @@ async def test_bad_version_file(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
@@ -1791,7 +1792,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
     if include_extra:
@@ -1803,7 +1804,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
                 'commit': {
                     'message': "A good commit",
                 },
-                'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+                'sha': sha,
             },
         ]
 
@@ -1918,7 +1919,7 @@ async def test_status_good_new_comment_other_base(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         {
             'author': {
@@ -1927,7 +1928,7 @@ async def test_status_good_new_comment_other_base(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
         # Test commits without a login
         {
@@ -1935,7 +1936,7 @@ async def test_status_good_new_comment_other_base(action):
             'commit': {
                 'message': "A good commit",
             },
-            'sha': 'a109f824f4cb2b1dd97cf832f329d59da00d609a',
+            'sha': sha,
         },
     ]
 
