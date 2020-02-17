@@ -233,7 +233,7 @@ If these files were added/deleted on purpose, you can ignore this message.
     elif existing_comment_added_deleted:
         # Files were added or deleted before but now they aren't, so delete
         # the comment
-        await gh.delete(existing_comment_added_deleted)
+        await gh.delete(existing_comment_added_deleted['url'])
 
     if existing_comment_release_notes:
         comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
