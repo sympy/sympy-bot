@@ -204,7 +204,7 @@ This is an experimental feature of SymPy Bot. If you have any feedback on it, pl
 """
         if added:
             added_deleted_message += f"""
-The following commits add new files:
+The following commits **add new files**:
 """
         for sha, files in added.items():
             added_deleted_message += f"* {sha}:\n"
@@ -213,7 +213,7 @@ The following commits add new files:
 
         if deleted:
             added_deleted_message += f"""
-The following commits delete files:
+The following commits **delete files**:
 """
         for sha, files in deleted.items():
             added_deleted_message += f"* {sha}:\n"
