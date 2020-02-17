@@ -191,8 +191,12 @@ Note: This comment will be updated with the latest check if you edit the pull re
 """
 
     if added or deleted:
+        # \U0001f7e0 is an orange circle. Don't include it here literally
+        # because it causes issues in some editors. We set it as a level 3
+        # header so it appears the same size as the GitHub :emojis:. It isn't
+        # available as a :emoji: unfortunately.
         added_deleted_message = f"""\
-### 🟠
+### \U0001f7e0
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
 
