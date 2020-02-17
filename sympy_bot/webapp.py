@@ -195,6 +195,8 @@ Note: This comment will be updated with the latest check if you edit the pull re
 ### 🟠
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
+
+This is an experimental feature of SymPy Bot. If you have any feedback on it, please comment at https://github.com/sympy/sympy-bot/issues/75.
 """
         if added:
             added_deleted_message += f"""
