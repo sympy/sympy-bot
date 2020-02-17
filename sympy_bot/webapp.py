@@ -105,15 +105,15 @@ async def pull_request_comment(event, gh):
     # Try to find an existing comment to update
     existing_comment_release_notes = None
     existing_comment_added_deleted = None
-    mentioned = []
+    # mentioned = []
     async for comment in comments:
         if comment['user']['login'] == USER:
             if "release notes entry" in comment['body']:
                 existing_comment_release_notes = comment
             elif "add or delete" in comment['body']:
                 existing_comment_added_deleted = comment
-        if f'@{USER}' in comment['body']:
-            mentioned.append(comment)
+        # if f'@{USER}' in comment['body']:
+        #     mentioned.append(comment)
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
