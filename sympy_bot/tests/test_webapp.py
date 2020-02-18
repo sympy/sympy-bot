@@ -70,17 +70,19 @@ class FakeGH:
 
     """
     def __init__(self, *, getitem=None, getiter=None, rate_limit=None,
-        post=None, patch=None):
+        post=None, patch=None, delete=None):
         self._getitem_return = getitem
         self._getiter_return = getiter
         self._post_return = post
         self._patch_return = patch
+        self._delete_return = delete
         self.getiter_urls = []
         self.getitem_urls = []
         self.post_urls = []
         self.post_data = []
         self.patch_urls = []
         self.patch_data = []
+        self.delete_urls = []
         self.rate_limit = rate_limit or FakeRateLimit()
 
     async def getitem(self, url):
@@ -102,6 +104,10 @@ class FakeGH:
         self.patch_data.append(data)
         return self._patch_return[url]
 
+    async def delete(self, url):
+        self.delete_urls.append(url)
+        return self._delete_return[url]
+
 def _assert_gh_is_empty(gh):
     assert gh._getitem_return == None
     assert gh._getiter_return == None
@@ -112,6 +118,7 @@ def _assert_gh_is_empty(gh):
     assert gh.post_data == []
     assert gh.patch_urls == []
     assert gh.patch_data == []
+    assert gh.delete_urls == []
 
 def _event(data):
     return sansio.Event(data, event='pull_request', delivery_id='1')
