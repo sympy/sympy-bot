@@ -190,6 +190,19 @@ Note: This comment will be updated with the latest check if you edit the pull re
 </details><p>
 """
 
+    if existing_comment_release_notes:
+        comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
+    else:
+        comment = await gh.post(comments_url, data={"body": release_notes_message})
+
+    statuses_url = event.data['pull_request']['statuses_url']
+    await gh.post(statuses_url, data=dict(
+        state=gh_status,
+        target_url=comment['html_url'],
+        description=status_message,
+        context='sympy-bot/release-notes',
+    ))
+
     if added or deleted:
         # \U0001f7e0 is an orange circle. Don't include it here literally
         # because it causes issues in some editors. We set it as a level 3
@@ -234,19 +247,6 @@ If these files were added/deleted on purpose, you can ignore this message.
         # Files were added or deleted before but now they aren't, so delete
         # the comment
         await gh.delete(existing_comment_added_deleted['url'])
-
-    if existing_comment_release_notes:
-        comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
-    else:
-        comment = await gh.post(comments_url, data={"body": release_notes_message})
-
-    statuses_url = event.data['pull_request']['statuses_url']
-    await gh.post(statuses_url, data=dict(
-        state=gh_status,
-        target_url=comment['html_url'],
-        description=status_message,
-        context='sympy-bot/release-notes',
-    ))
 
     rate_limit = gh.rate_limit
     remaining = rate_limit.remaining

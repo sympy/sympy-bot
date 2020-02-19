@@ -2385,12 +2385,12 @@ async def test_added_deleted_new_comment(action):
     # The rest is already tested in test_status_good_new_comment
     assert getiter_urls == list(getiter)
     assert getitem_urls == list(getitem)
-    assert post_urls == [comments_url, statuses_url]
+    assert post_urls == [statuses_url, comments_url]
     assert patch_urls == [existing_comment_url]
     assert len(post_data) == 2
     # Comments data
-    assert post_data[0].keys() == {"body"}
-    comment = post_data[0]["body"]
+    assert post_data[1].keys() == {"body"}
+    comment = post_data[1]["body"]
     assert ":white_check_mark:" not in comment
     assert ":x:" not in comment
     assert "\U0001f7e0" in comment
@@ -2552,11 +2552,11 @@ async def test_added_deleted_existing_comment(action):
         statuses_url: {},
     }
     patch = {
-        existing_added_deleted_comment_url: {
-            'html_url': comment_html_url2,
-        },
         existing_comment_url: {
             'html_url': comment_html_url,
+        },
+        existing_added_deleted_comment_url: {
+            'html_url': comment_html_url2,
         },
     }
 
@@ -2579,9 +2579,9 @@ async def test_added_deleted_existing_comment(action):
     assert patch_urls == list(patch)
     assert len(post_data) == 1
     assert len(patch_data) == 2
-    # Comments data
-    assert patch_data[0].keys() == {"body"}
-    comment = patch_data[0]["body"]
+    # Comments data.
+    assert patch_data[1].keys() == {"body"}
+    comment = patch_data[1]["body"]
     assert ":white_check_mark:" not in comment
     assert ":x:" not in comment
     assert "\U0001f7e0" in comment
