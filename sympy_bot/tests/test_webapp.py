@@ -292,7 +292,13 @@ async def test_status_good_new_comment(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -432,7 +438,13 @@ async def test_status_good_existing_comment(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # Has comment from sympy-bot
@@ -594,7 +606,13 @@ async def test_closed_with_merging(mocker, action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # Has comment from sympy-bot
@@ -738,7 +756,13 @@ async def test_closed_with_merging_no_entry(mocker, action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     commits = [
@@ -938,7 +962,13 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # Has comment from sympy-bot
@@ -1133,7 +1163,13 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # Has comment from sympy-bot
@@ -1303,7 +1339,13 @@ async def test_status_bad_new_comment(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -1443,7 +1485,13 @@ async def test_status_bad_existing_comment(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # Has comment from sympy-bot
@@ -1593,7 +1641,13 @@ async def test_rate_limit_comment(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -1726,7 +1780,13 @@ async def test_header_in_message(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -1866,7 +1926,13 @@ async def test_bad_version_file(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -1989,7 +2055,13 @@ async def test_no_user_logins_in_commits(action, include_extra):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     if include_extra:
@@ -2149,7 +2221,13 @@ async def test_status_good_new_comment_other_base(action):
             {
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     # No comment from sympy-bot
@@ -2254,11 +2332,22 @@ async def test_added_deleted_new_comment(action):
         'action': action,
     }
 
+    sha_merge = '61697bd7249381b27a4b5d449a8061086effd381'
     sha_1 = '174b8b37bc33e9eb29e710a233190d02a13bdb54'
     sha_2 = 'aef484a1d46bb5389f1709d78e39126d9cb8599f'
     sha_3 = sha
 
     commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+            'commit': {
+                'message': "Merge"
+            },
+            'sha': sha_merge,
+            'url': commit_url_template.format(sha=sha_merge)
+        },
         {
             'author': {
                 'login': 'asmeurer',
@@ -2291,6 +2380,30 @@ async def test_added_deleted_new_comment(action):
         },
     ]
 
+    commit_merge = {
+        'sha': sha_1,
+        'files': [
+            {
+                'filename': 'file1',
+                'status': 'added',
+            },
+            {
+                'filename': 'file2',
+                'status': 'deleted',
+            },
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha_2,
+                },
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
+    }
+
     commit_add = {
         'sha': sha_1,
         'files': [
@@ -2298,7 +2411,13 @@ async def test_added_deleted_new_comment(action):
                 'filename': 'file1',
                 'status': 'added',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     commit_modify = {
@@ -2308,7 +2427,13 @@ async def test_added_deleted_new_comment(action):
                 'filename': 'file1',
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     commit_delete = {
@@ -2318,7 +2443,13 @@ async def test_added_deleted_new_comment(action):
                 'filename': 'file1',
                 'status': 'removed',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     comments = [
@@ -2353,6 +2484,7 @@ async def test_added_deleted_new_comment(action):
     }
 
     getitem = {
+        commit_url_template.format(sha=sha_merge): commit_merge,
         commit_url_template.format(sha=sha_1): commit_add,
         commit_url_template.format(sha=sha_2): commit_modify,
         commit_url_template.format(sha=sha_3): commit_delete,
@@ -2401,6 +2533,7 @@ async def test_added_deleted_new_comment(action):
     assert sha_1 in comment
     assert sha_2 not in comment
     assert sha_3 in comment
+    assert sha_merge not in comment
     assert "`file1`" in comment
     assert "<!-- BEGIN RELEASE NOTES -->" not in comment
     assert "<!-- END RELEASE NOTES -->" not in comment
@@ -2434,11 +2567,22 @@ async def test_added_deleted_existing_comment(action):
         'action': action,
     }
 
+    sha_merge = '61697bd7249381b27a4b5d449a8061086effd381'
     sha_1 = '174b8b37bc33e9eb29e710a233190d02a13bdb54'
     sha_2 = 'aef484a1d46bb5389f1709d78e39126d9cb8599f'
     sha_3 = sha
 
     commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+            'commit': {
+                'message': "Merge"
+            },
+            'sha': sha_merge,
+            'url': commit_url_template.format(sha=sha_merge)
+        },
         {
             'author': {
                 'login': 'asmeurer',
@@ -2471,6 +2615,30 @@ async def test_added_deleted_existing_comment(action):
         },
     ]
 
+    commit_merge = {
+        'sha': sha_1,
+        'files': [
+            {
+                'filename': 'file1',
+                'status': 'added',
+            },
+            {
+                'filename': 'file2',
+                'status': 'deleted',
+            },
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha_2,
+                },
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
+    }
+
     commit_add = {
         'sha': sha_1,
         'files': [
@@ -2478,7 +2646,13 @@ async def test_added_deleted_existing_comment(action):
                 'filename': 'file1',
                 'status': 'added',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     commit_modify = {
@@ -2488,7 +2662,13 @@ async def test_added_deleted_existing_comment(action):
                 'filename': 'file1',
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     commit_delete = {
@@ -2498,7 +2678,13 @@ async def test_added_deleted_existing_comment(action):
                 'filename': 'file1',
                 'status': 'removed',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     comments = [
@@ -2540,6 +2726,7 @@ async def test_added_deleted_existing_comment(action):
     }
 
     getitem = {
+        commit_url_template.format(sha=sha_merge): commit_merge,
         commit_url_template.format(sha=sha_1): commit_add,
         commit_url_template.format(sha=sha_2): commit_modify,
         commit_url_template.format(sha=sha_3): commit_delete,
@@ -2592,6 +2779,7 @@ async def test_added_deleted_existing_comment(action):
     assert sha_1 in comment
     assert sha_2 not in comment
     assert sha_3 in comment
+    assert sha_merge not in comment
     assert "`file1`" in comment
     assert "<!-- BEGIN RELEASE NOTES -->" not in comment
     assert "<!-- END RELEASE NOTES -->" not in comment
@@ -2644,7 +2832,13 @@ async def test_added_deleted_remove_existing_comment(action):
                 'filename': 'file1',
                 'status': 'modified',
             },
-        ]
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
     }
 
     comments = [
