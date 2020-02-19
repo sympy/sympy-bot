@@ -87,6 +87,9 @@ async def pull_request_comment(event, gh):
             header_in_message = commit['sha']
 
         com = await gh.getitem(commit['url'])
+        if len(com['parents']) > 1:
+            # Merge commit
+            continue
         for file in com['files']:
             if file['status'] == 'added':
                 added[com['sha']].append(file)
