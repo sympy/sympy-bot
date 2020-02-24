@@ -34,7 +34,7 @@ async def main_post(request):
 
     print(f"Received {event.event} event with delivery_id={event.delivery_id}")
     async with ClientSession() as session:
-        gh = GitHubAPI(session, USER, oauth_token=oauth_token)
+        gh = GitHubAPI(session, USER, oauth_token=oauth_token, cache={})
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
@@ -65,9 +65,11 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         print(f"PR #{pr_number} is closed, skipping")
         return
 
-    await pull_request_comment(event, gh)
+    await pull_request_comment_release_notes(event, gh)
+    await pull_request_comment_added_deleted(event, gh)
+    await rate_limit_comment(event, gh)
 
-async def pull_request_comment(event, gh):
+async def pull_request_comment_release_notes(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
     number = event.data["pull_request"]["number"]
     # TODO: Get the full list of users with commits, not just the user who
@@ -76,8 +78,6 @@ async def pull_request_comment(event, gh):
     commits = gh.getiter(commits_url)
     users = set()
     header_in_message = False
-    added = defaultdict(list)
-    deleted = defaultdict(list)
 
     async for commit in commits:
         if commit['author']:
@@ -85,13 +85,6 @@ async def pull_request_comment(event, gh):
         message = commit['commit']['message']
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
-
-        com = await gh.getitem(commit['url'])
-        for file in com['files']:
-            if file['status'] == 'added':
-                added[com['sha']].append(file)
-            elif file['status'] == 'removed':
-                deleted[com['sha']].append(file)
 
     users.add(event.data['pull_request']['head']['user']['login'])
 
@@ -104,16 +97,10 @@ async def pull_request_comment(event, gh):
     comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
     existing_comment_release_notes = None
-    existing_comment_added_deleted = None
-    # mentioned = []
     async for comment in comments:
         if comment['user']['login'] == USER:
             if "release notes entry" in comment['body']:
                 existing_comment_release_notes = comment
-            elif "add or delete" in comment['body']:
-                existing_comment_added_deleted = comment
-        # if f'@{USER}' in comment['body']:
-        #     mentioned.append(comment)
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
@@ -190,6 +177,67 @@ Note: This comment will be updated with the latest check if you edit the pull re
 </details><p>
 """
 
+
+    if existing_comment_release_notes:
+        comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
+    else:
+        comment = await gh.post(comments_url, data={"body": release_notes_message})
+
+    statuses_url = event.data['pull_request']['statuses_url']
+    await gh.post(statuses_url, data=dict(
+        state=gh_status,
+        target_url=comment['html_url'],
+        description=status_message,
+        context='sympy-bot/release-notes',
+    ))
+
+    return status, release_notes_file, changelogs, comment, users
+
+async def rate_limit_comment(event, gh):
+    comments_url = event.data["pull_request"]["comments_url"]
+    rate_limit = gh.rate_limit
+    remaining = rate_limit.remaining
+    total = rate_limit.limit
+    reset_datetime = rate_limit.reset_datetime
+
+    if remaining <= 10:
+        message = f"""\
+
+**:warning::warning::warning:WARNING:warning::warning::warning:**: I am nearing my API limit. I have only {remaining} of {total} API requests left. They will reset on {reset_datetime} (UTC), which is in {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
+
+"""
+
+        await gh.post(comments_url, data={"body": message})
+
+async def pull_request_comment_added_deleted(event, gh):
+    comments_url = event.data["pull_request"]["comments_url"]
+    # TODO: Get the full list of users with commits, not just the user who
+    # opened the PR.
+    commits_url = event.data["pull_request"]["commits_url"]
+    commits = gh.getiter(commits_url)
+    added = defaultdict(list)
+    deleted = defaultdict(list)
+
+    async for commit in commits:
+        com = await gh.getitem(commit['url'])
+        for file in com['files']:
+            if file['status'] == 'added':
+                added[com['sha']].append(file)
+            elif file['status'] == 'removed':
+                deleted[com['sha']].append(file)
+
+    comments = gh.getiter(comments_url)
+    # Try to find an existing comment to update
+    existing_comment = None
+    # mentioned = []
+    async for comment in comments:
+        if comment['user']['login'] == USER:
+            if "add or delete" in comment['body']:
+                existing_comment = comment
+                break
+        # if f'@{USER}' in comment['body']:
+        #     mentioned.append(comment)
+
     if added or deleted:
         # \U0001f7e0 is an orange circle. Don't include it here literally
         # because it causes issues in some editors. We set it as a level 3
@@ -226,43 +274,14 @@ If these files were added/deleted on purpose, you can ignore this message.
         # TODO: Allow users to whitelist files by @mentioning the bot. Then we
         # could make this give a failing status.
 
-        if existing_comment_added_deleted:
-            comment = await gh.patch(existing_comment_added_deleted['url'], data={"body": added_deleted_message})
+        if existing_comment:
+            comment = await gh.patch(existing_comment['url'], data={"body": added_deleted_message})
         else:
             comment = await gh.post(comments_url, data={"body": added_deleted_message})
-    elif existing_comment_added_deleted:
+    elif existing_comment:
         # Files were added or deleted before but now they aren't, so delete
         # the comment
-        await gh.delete(existing_comment_added_deleted['url'])
-
-    if existing_comment_release_notes:
-        comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
-    else:
-        comment = await gh.post(comments_url, data={"body": release_notes_message})
-
-    statuses_url = event.data['pull_request']['statuses_url']
-    await gh.post(statuses_url, data=dict(
-        state=gh_status,
-        target_url=comment['html_url'],
-        description=status_message,
-        context='sympy-bot/release-notes',
-    ))
-
-    rate_limit = gh.rate_limit
-    remaining = rate_limit.remaining
-    total = rate_limit.limit
-    reset_datetime = rate_limit.reset_datetime
-
-    if remaining <= 10:
-        message = f"""\
-
-**:warning::warning::warning:WARNING:warning::warning::warning:**: I am nearing my API limit. I have only {remaining} of {total} API requests left. They will reset on {reset_datetime} (UTC), which is in {reset_datetime - datetime.datetime.now(datetime.timezone.utc)}.
-
-"""
-
-        comment = await gh.post(comments_url, data={"body": message})
-
-    return status, release_notes_file, changelogs, comment, users
+        await gh.delete(existing_comment['url'])
 
 @router.register("pull_request", action="closed")
 async def pull_request_closed(event, gh, *args, **kwargs):
@@ -272,7 +291,7 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print(f"PR #{pr_number} was closed without merging, skipping")
         return
 
-    status, release_notes_file, changelogs, comment, users = await pull_request_comment(event, gh, *args, **kwargs)
+    status, release_notes_file, changelogs, comment, users = await pull_request_comment_release_notes(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
     release_notes_url = event.data['pull_request']['base']['repo']['html_url'] + '/wiki/' + release_notes_file[:-3] # Strip the .md for the URL
@@ -307,6 +326,8 @@ The release notes on the [wiki]({release_notes_url}) have been updated.
     else:
         message = "The pull request was merged even though the release notes bot had a failing status."
         await error_comment(event, gh, message)
+
+    await rate_limit_comment(event, gh)
 
 async def error_comment(event, gh, message):
     """
