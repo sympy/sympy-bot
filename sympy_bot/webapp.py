@@ -177,7 +177,6 @@ Note: This comment will be updated with the latest check if you edit the pull re
 </details><p>
 """
 
-
     if existing_comment_release_notes:
         comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
     else:
