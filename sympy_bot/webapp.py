@@ -243,9 +243,9 @@ If these files were added/deleted on purpose, you can ignore this message.
         # could make this give a failing status.
 
         if existing_comment_added_deleted:
-            comment = await gh.patch(existing_comment_added_deleted['url'], data={"body": added_deleted_message})
+            await gh.patch(existing_comment_added_deleted['url'], data={"body": added_deleted_message})
         else:
-            comment = await gh.post(comments_url, data={"body": added_deleted_message})
+            await gh.post(comments_url, data={"body": added_deleted_message})
     elif existing_comment_added_deleted:
         # Files were added or deleted before but now they aren't, so delete
         # the comment
@@ -263,7 +263,7 @@ If these files were added/deleted on purpose, you can ignore this message.
 
 """
 
-        comment = await gh.post(comments_url, data={"body": message})
+        await gh.post(comments_url, data={"body": message})
 
     return status, release_notes_file, changelogs, comment, users
 
