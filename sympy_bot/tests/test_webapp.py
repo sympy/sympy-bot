@@ -58,6 +58,7 @@ class FakeGH:
     - rate_limit: FakeRateLimit object, or None
     - post: dictionary mapping {url: result}, or None
     - patch: dictionary mapping {url: result}, or None
+    - delete: dictionary mapping {url: result}, or None
 
     The results are stored in the properties
 
@@ -67,6 +68,8 @@ class FakeGH:
     - post_data: list of the data input for each post
     - patch_urls: list of urls called with patch
     - patch_data: list of the data input for each patch
+    - delete_urls: list of urls called with delete
+    - rate_limit: the FakeRateLimit object
 
     """
     def __init__(self, *, getitem=None, getiter=None, rate_limit=None,
