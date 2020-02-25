@@ -87,7 +87,11 @@ async def pull_request_comment(event, gh):
             header_in_message = commit['sha']
 
         # Workaround https://github.com/sympy/sympy-bot/issues/84
-        com = await gh.getitem(f"https://api.github.com/repos/sympy/sympy/commits/{commit['sha']}")
+        try:
+            com = await gh.getitem(commit['url'])
+        except BadRequest:
+            print(f"Warning: could not get commit {commit['sha']}")
+            continue
         if len(com['parents']) > 1:
             # Merge commit
             continue
