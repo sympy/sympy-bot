@@ -86,9 +86,8 @@ async def pull_request_comment(event, gh):
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
 
-        # DEBUG
-        print(commit)
-        com = await gh.getitem(commit['url'])
+        # Workaround https://github.com/sympy/sympy-bot/issues/84
+        com = await gh.getitem(f"https://api.github.com/repos/sympy/sympy/commits/{commit['sha']}")
         if len(com['parents']) > 1:
             # Merge commit
             continue
