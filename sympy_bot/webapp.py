@@ -86,6 +86,8 @@ async def pull_request_comment(event, gh):
         if BEGIN_RELEASE_NOTES in message or END_RELEASE_NOTES in message:
             header_in_message = commit['sha']
 
+        # DEBUG
+        print(commit)
         com = await gh.getitem(commit['url'])
         if len(com['parents']) > 1:
             # Merge commit
