@@ -227,11 +227,11 @@ async def pull_request_comment_added_deleted(event, gh):
         if len(com['parents']) > 1:
             # Merge commit
             continue
-            for file in com['files']:
-                if file['status'] == 'added':
-                    added[com['sha']].append(file)
-                elif file['status'] == 'removed':
-                    deleted[com['sha']].append(file)
+        for file in com['files']:
+            if file['status'] == 'added':
+                added[com['sha']].append(file)
+            elif file['status'] == 'removed':
+                deleted[com['sha']].append(file)
 
     comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
