@@ -166,7 +166,7 @@ invalid_PR_description = """
 <!-- END RELEASE NOTES -->
 """
 
-comment_body = """\
+release_notes_comment_body = """\
 :white_check_mark:
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) (version not found!). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
@@ -459,7 +459,7 @@ async def test_status_good_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -627,7 +627,7 @@ async def test_closed_with_merging(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -662,7 +662,7 @@ async def test_closed_with_merging(mocker, action):
     patch = {
         existing_comment_url: {
             'html_url': comment_html_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
             'url': existing_comment_url,
         },
     }
@@ -695,7 +695,7 @@ async def test_closed_with_merging(mocker, action):
     assert len(patch_data) == 2
     assert patch_data[0].keys() == {"body"}
     comment = patch_data[0]["body"]
-    assert comment_body == comment
+    assert comment == release_notes_comment_body
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
@@ -808,7 +808,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -843,7 +843,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
     patch = {
         existing_comment_url: {
             'html_url': comment_html_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
             'url': existing_comment_url,
         },
     }
@@ -981,7 +981,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -1019,7 +1019,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     patch = {
         existing_comment_url: {
             'html_url': comment_html_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
             'url': existing_comment_url,
         },
     }
@@ -1069,7 +1069,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     assert len(patch_data) == 1
     assert patch_data[0].keys() == {"body"}
     comment = patch_data[0]["body"]
-    assert comment_body == comment
+    assert comment == release_notes_comment_body
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
@@ -1181,7 +1181,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -1213,7 +1213,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
     patch = {
         existing_comment_url: {
             'html_url': comment_html_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
             'url': existing_comment_url,
         },
     }
@@ -1501,7 +1501,7 @@ async def test_status_bad_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -2458,7 +2458,7 @@ async def test_added_deleted_new_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -2693,7 +2693,7 @@ async def test_added_deleted_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
@@ -2847,7 +2847,7 @@ async def test_added_deleted_remove_existing_comment(action):
                 'login': 'sympy-bot',
             },
             'url': existing_comment_url,
-            'body': comment_body,
+            'body': release_notes_comment_body,
         },
         {
             'user': {
