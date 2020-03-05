@@ -71,6 +71,8 @@ class FakeGH:
     - delete_urls: list of urls called with delete
     - rate_limit: the FakeRateLimit object
 
+    Note that GET requests are cached in the code and may be called multiple
+    times.
     """
     def __init__(self, *, getitem=None, getiter=None, rate_limit=None,
         post=None, patch=None, delete=None):
@@ -351,8 +353,8 @@ async def test_status_good_new_comment(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -509,8 +511,8 @@ async def test_status_good_existing_comment(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -652,7 +654,6 @@ async def test_closed_with_merging(mocker, action):
 
     getitem = {
         version_url: version_file,
-        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -679,8 +680,8 @@ async def test_closed_with_merging(mocker, action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter), getiter_urls
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -834,7 +835,6 @@ async def test_closed_with_merging_no_entry(mocker, action):
 
     getitem = {
         version_url: version_file,
-        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -861,8 +861,8 @@ async def test_closed_with_merging_no_entry(mocker, action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter), getiter_urls
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -1008,7 +1008,6 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
 
     getitem = {
         version_url: version_file,
-        commit_url: commit,
     }
     post = {
         statuses_url: {},
@@ -1039,8 +1038,8 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter), getiter_urls
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url, comments_url, statuses_url]
     # Statuses data
     assert len(post_data) == 3
@@ -1203,9 +1202,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
         comments_url: comments,
     }
 
-    getitem = {
-        commit_url: commit,
-    }
+    getitem = {}
     post = {
         statuses_url: {},
         comments_url: {
@@ -1234,8 +1231,8 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter), getiter_urls
-    assert getitem_urls == [commit_url]*len(commits)
+    assert set(getiter_urls) == set(getiter), getiter_urls
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url, comments_url, statuses_url]
     # Statuses data
     assert len(post_data) == 3
@@ -1395,8 +1392,8 @@ async def test_status_bad_new_comment(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits)
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1551,8 +1548,8 @@ async def test_status_bad_existing_comment(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits)
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     # Statuses data
     assert post_data == [{
@@ -1838,8 +1835,8 @@ async def test_header_in_message(action):
     patch_data = gh.patch_data
 
     # The rest is already tested in test_status_good_new_comment
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url_template.format(sha=sha_1)] + 2*[commit_url]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -1985,8 +1982,8 @@ async def test_bad_version_file(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -2130,8 +2127,8 @@ async def test_no_user_logins_in_commits(action, include_extra):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits) + [version_url]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -2280,8 +2277,8 @@ async def test_status_good_new_comment_other_base(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == [commit_url]*len(commits) + [version_url_template.format(ref='1.4')]
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [comments_url, statuses_url]
     assert len(post_data) == 2
     # Comments data
@@ -2518,8 +2515,8 @@ async def test_added_deleted_new_comment(action):
     patch_urls = gh.patch_urls
 
     # The rest is already tested in test_status_good_new_comment
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url, comments_url]
     assert patch_urls == [existing_comment_url]
     assert len(post_data) == 2
@@ -2763,8 +2760,8 @@ async def test_added_deleted_existing_comment(action):
     patch_urls = gh.patch_urls
     patch_data = gh.patch_data
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     assert patch_urls == list(patch)
     assert len(post_data) == 1
@@ -2917,8 +2914,8 @@ async def test_added_deleted_remove_existing_comment(action):
     patch_data = gh.patch_data
     delete_urls = gh.delete_urls
 
-    assert getiter_urls == list(getiter)
-    assert getitem_urls == list(getitem)
+    assert set(getiter_urls) == set(getiter)
+    assert set(getitem_urls) == set(getitem)
     assert post_urls == [statuses_url]
     assert patch_urls == list(patch)
     assert delete_urls == list(delete)
