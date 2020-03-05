@@ -606,20 +606,6 @@ async def test_closed_with_merging(mocker, action):
         },
     ]
 
-    commit = {
-        'files': [
-            {
-                'status': 'modified',
-            },
-        ],
-        'parents': [
-                {
-                    "url": commit_url,
-                    "sha": sha,
-                },
-        ],
-    }
-
     # Has comment from sympy-bot
     comments = [
         {
@@ -753,20 +739,6 @@ async def test_closed_with_merging_no_entry(mocker, action):
             'statuses_url': statuses_url,
         },
         'action': action,
-    }
-
-    commit = {
-        'files': [
-            {
-                'status': 'modified',
-            },
-        ],
-        'parents': [
-                {
-                    "url": commit_url,
-                    "sha": sha,
-                },
-        ],
     }
 
     commits = [
@@ -960,20 +932,6 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
         },
     ]
 
-    commit = {
-        'files': [
-            {
-                'status': 'modified',
-            },
-        ],
-        'parents': [
-                {
-                    "url": commit_url,
-                    "sha": sha,
-                },
-        ],
-    }
-
     # Has comment from sympy-bot
     comments = [
         {
@@ -1159,20 +1117,6 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             'url': commit_url,
         },
     ]
-
-    commit = {
-        'files': [
-            {
-                'status': 'modified',
-            },
-        ],
-        'parents': [
-                {
-                    "url": commit_url,
-                    "sha": sha,
-                },
-        ],
-    }
 
     # Has comment from sympy-bot
     comments = [
