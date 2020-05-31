@@ -258,7 +258,7 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'
 This is an experimental feature of SymPy Bot. If you have any feedback on it, please comment at https://github.com/sympy/sympy-bot/issues/75.
 """
         if added:
-            added_deleted_message += f"""
+            added_deleted_message += """
 The following commits **add new files**:
 """
         for sha, files in added.items():
@@ -267,7 +267,7 @@ The following commits **add new files**:
                 added_deleted_message += f"  - `{file['filename']}`\n"
 
         if deleted:
-            added_deleted_message += f"""
+            added_deleted_message += """
 The following commits **delete files**:
 """
         for sha, files in deleted.items():
@@ -275,7 +275,7 @@ The following commits **delete files**:
             for file in files:
                 added_deleted_message += f"  - `{file['filename']}`\n"
 
-        added_deleted_message += f"""
+        added_deleted_message += """
 If these files were added/deleted on purpose, you can ignore this message.
 """
         # TODO: Allow users to whitelist files by @mentioning the bot. Then we
