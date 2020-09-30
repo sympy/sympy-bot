@@ -181,7 +181,7 @@ Here is what the release notes will look like:
 
 This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.1.
 
-Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it. <details><summary>Click here to see the pull request description that was parsed.</summary>
+<details><summary>Click here to see the pull request description that was parsed.</summary>
 
 
     <!-- BEGIN RELEASE NOTES -->

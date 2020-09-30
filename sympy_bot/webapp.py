@@ -170,7 +170,7 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'
 
 {message}
 
-Note: This comment will be updated with the latest check if you edit the pull request. You need to reload the page to see it. <details><summary>Click here to see the pull request description that was parsed.</summary>
+<details><summary>Click here to see the pull request description that was parsed.</summary>
 
 {textwrap.indent(event.data['pull_request']['body'], '    ')}
 
