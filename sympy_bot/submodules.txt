@@ -28,8 +28,8 @@ logic
 matrices
 ntheory
 parsing
-# physics is disparate enough to list each submodule separately
 
+# physics is disparate enough to list each submodule separately
 physics.continuum_mechanics
 physics.control
 physics.gaussopt
