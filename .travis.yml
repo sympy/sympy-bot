@@ -9,4 +9,4 @@ install:
 
 script:
   - pyflakes .
-  - py.test
+  - pytest
