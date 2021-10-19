@@ -19,7 +19,7 @@ def test_run(mocker, capsys):
     assert captured.out == 'echo ~~~~~\n~~~~~\n\n'
     assert captured.err == ''
 
-@pytest.mark.skipif(not TESTING_TOKEN, reason="No API token present")
+@pytest.mark.skipif(True, reason="The update wiki test needs to be updated. See https://github.com/sympy/sympy-bot/issues/98")
 def test_update_wiki(mocker):
     mocker.patch.dict(os.environ, {"GH_AUTH": TESTING_TOKEN})
 
