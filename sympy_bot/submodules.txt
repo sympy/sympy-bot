@@ -59,6 +59,7 @@ solvers
 stats
 strategies
 tensor
+testing
 unify
 utilities
 vector
