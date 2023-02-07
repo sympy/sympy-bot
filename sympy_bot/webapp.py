@@ -19,7 +19,6 @@ router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
-BOT_VERSION = os.environ.get('HEROKU_RELEASE_VERSION', 'version not found!')
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -160,7 +159,7 @@ There was an error processing the release notes, which most likely indicates a b
     release_notes_message = f"""\
 {emoji_status[status] if status else ''}
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 """
     if not status:
