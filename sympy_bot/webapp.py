@@ -19,7 +19,6 @@ router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
-BOT_VERSION = os.environ.get('HEROKU_RELEASE_VERSION', 'version not found!')
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -160,7 +159,7 @@ There was an error processing the release notes, which most likely indicates a b
     release_notes_message = f"""\
 {emoji_status[status] if status else ''}
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 """
     if not status:
@@ -250,10 +249,10 @@ async def pull_request_comment_added_deleted(event, gh):
         # because it causes issues in some editors. We set it as a level 3
         # header so it appears the same size as the GitHub :emojis:. It isn't
         # available as a :emoji: unfortunately.
-        added_deleted_message = f"""\
+        added_deleted_message = """\
 ### \U0001f7e0
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) ({BOT_VERSION}). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
 
 This is an experimental feature of SymPy Bot. If you have any feedback on it, please comment at https://github.com/sympy/sympy-bot/issues/75.
 """
