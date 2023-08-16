@@ -30,6 +30,7 @@ ntheory
 parsing
 
 # physics is disparate enough to list each submodule separately
+physics.biomechanics
 physics.continuum_mechanics
 physics.control
 physics.gaussopt
