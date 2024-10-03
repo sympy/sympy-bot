@@ -66,7 +66,8 @@ async def pull_request_edited(event, gh, *args, **kwargs):
 
     if event.data['pull_request']['user']['login'] == "dependabot[bot]":
         await pull_request_noop(event, gh, status_message="This is a Dependabot PR. SymPy Bot not run.")
-    await pull_request_comment_release_notes(event, gh)
+    else:
+        await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
     await rate_limit_comment(event, gh)
 
