@@ -64,9 +64,19 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         print(f"PR #{pr_number} is closed, skipping")
         return
 
+    if event.data['pull_request']['user']['login'] == "dependabot[bot]":
+        await pull_request_noop(event, gh, status_message="This is a Dependabot PR. SymPy Bot not run.")
     await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
     await rate_limit_comment(event, gh)
+
+async def pull_request_noop(event, gh, status_message=None):
+    statuses_url = event.data['pull_request']['statuses_url']
+    await gh.post(statuses_url, data=dict(
+        state='success',
+        description=status_message,
+        context='sympy-bot/release-notes',
+    ))
 
 async def pull_request_comment_release_notes(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
