@@ -17,6 +17,7 @@ core
 crypto
 diffgeom
 discrete
+equation
 external
 functions
 geometry
