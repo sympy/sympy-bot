@@ -2921,3 +2921,149 @@ async def test_added_deleted_remove_existing_comment(action):
     assert "delete files" not in comment
     assert sha not in comment
     assert "`file1`" not in comment
+
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_dependabot_pr_noop(action):
+    """Test that dependabot PRs get a success status without processing release notes"""
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'user': {
+                'login': 'dependabot[bot]',
+            },
+            'head': {
+                'user': {
+                    'login': 'dependabot[bot]',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': 'master',
+            },
+            'body': 'Updates some dependency',  # No release notes format
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    }
+
+    commits = [
+        {
+            'author': {
+                'login': 'dependabot[bot]',
+            },
+            'commit': {
+                'message': "Update dependency",
+            },
+            'sha': sha,
+            'url': commit_url,
+        },
+    ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
+    }
+
+    # No comment from sympy-bot
+    comments = []
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {
+        commit_url: commit,
+    }
+    post = {
+        statuses_url: {},
+    }
+
+    event = _event(event_data)
+
+    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
+
+    await router.dispatch(event, gh)
+
+    getitem_urls = gh.getitem_urls
+    getiter_urls = gh.getiter_urls
+    post_urls = gh.post_urls
+    post_data = gh.post_data
+    patch_urls = gh.patch_urls
+    patch_data = gh.patch_data
+
+    # Should only fetch commit info for added/deleted file check
+    assert set(getiter_urls) == {commits_url, comments_url}
+    assert set(getitem_urls) == {commit_url}
+
+    # Should post success status for dependabot but not any comments for release notes
+    assert post_urls == [statuses_url]
+    assert len(post_data) == 1
+
+    # Status should be success with appropriate message
+    assert post_data[0] == {
+        "state": "success",
+        "description": "This is a Dependabot PR. SymPy Bot not run.",
+        "context": "sympy-bot/release-notes",
+    }
+
+    # Should not patch or create any comments
+    assert patch_urls == []
+    assert patch_data == []
+
+
+async def test_dependabot_pr_closed_skip():
+    """Test that merged dependabot PRs are skipped without processing"""
+    event_data = {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': True,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'user': {
+                'login': 'dependabot[bot]',
+            },
+            'head': {
+                'user': {
+                    'login': 'dependabot[bot]',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': 'master',
+            },
+            'body': 'Updates some dependency',
+            'statuses_url': statuses_url,
+        },
+        'action': 'closed',
+    }
+
+    gh = FakeGH()
+    event = _event(event_data)
+
+    res = await router.dispatch(event, gh)
+
+    # Should return None and make no API calls
+    assert res is None
+    _assert_gh_is_empty(gh)
