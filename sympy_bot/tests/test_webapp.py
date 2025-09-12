@@ -241,6 +241,9 @@ async def test_status_good_new_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -388,6 +391,9 @@ async def test_status_good_existing_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -555,6 +561,9 @@ async def test_closed_with_merging(mocker, action):
             'merged': True,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -723,6 +732,9 @@ async def test_closed_with_merging_no_entry(mocker, action):
             'merged': True,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -881,6 +893,9 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
             'merged': True,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1067,6 +1082,9 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
             'merged': True,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1227,6 +1245,9 @@ async def test_status_bad_new_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1373,6 +1394,9 @@ async def test_status_bad_existing_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1529,6 +1553,9 @@ async def test_rate_limit_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1663,6 +1690,9 @@ async def test_header_in_message(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1814,6 +1844,9 @@ async def test_bad_version_file(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -1964,6 +1997,9 @@ async def test_no_user_logins_in_commits(action, include_extra):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -2109,6 +2145,9 @@ async def test_status_good_new_comment_other_base(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -2258,6 +2297,9 @@ async def test_added_deleted_new_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -2493,6 +2535,9 @@ async def test_added_deleted_existing_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
@@ -2738,6 +2783,9 @@ async def test_added_deleted_remove_existing_comment(action):
             'merged': False,
             'comments_url': comments_url,
             'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
             'head': {
                 'user': {
                     'login': 'asmeurer',
