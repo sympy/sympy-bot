@@ -169,7 +169,7 @@ invalid_PR_description = """
 release_notes_comment_body = """\
 :white_check_mark:
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) (version not found!). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
 
 
 
@@ -196,7 +196,7 @@ This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.
 added_deleted_comment_body = """\
 ### \U0001f7e0
 
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot) (version not found!). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I've noticed that some of your commits add or delete files. Since this is sometimes done unintentionally, I wanted to alert you about it.
 
 This is an experimental feature of SymPy Bot. If you have any feedback on it, please comment at https://github.com/sympy/sympy-bot/issues/75.
 
@@ -865,8 +865,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
     assert ":x:" not in comment
     assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
-    for line in valid_PR_description:
-        assert line in comment
+    assert "NO ENTRY" in comment
 
     assert update_wiki_called_kwargs == {}
 
