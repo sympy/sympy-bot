@@ -3,6 +3,7 @@ import datetime
 import os
 import base64
 from subprocess import CalledProcessError
+import re
 from collections import defaultdict
 
 from aiohttp import web, ClientSession
@@ -69,6 +70,7 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     else:
         await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
+    await pull_request_assign_issues(event, gh)
     await rate_limit_comment(event, gh)
 
 async def pull_request_noop(event, gh, status_message=None):
@@ -305,7 +307,8 @@ async def pull_request_closed(event, gh, *args, **kwargs):
     pr_number = event.data['pull_request']['number']
     print(f"PR #{pr_number} was {event.data['action']}.")
     if not event.data['pull_request']['merged']:
-        print(f"PR #{pr_number} was closed without merging, skipping")
+        await pull_request_unassign_issues(event, gh)
+        print(f"PR #{pr_number} was closed without merging, skipping release notes processing")
         return
 
     if event.data['pull_request']['user']['login'] == "dependabot[bot]":
@@ -377,3 +380,56 @@ The error message was: {message}
         description='There was an error updating the release notes on the wiki.',
         context='sympy-bot/release-notes',
     ))
+
+FIXES_ISSUE = re.compile(r'(?:fixes|closes) +#(\d+)', re.I)
+
+async def pull_request_assign_issues(event, gh):
+    await _pull_request_assign(event, gh, 'assign')
+
+async def pull_request_unassign_issues(event, gh):
+    await _pull_request_assign(event, gh, 'unassign')
+
+async def _pull_request_assign(event, gh, assign):
+    commits_url = event.data["pull_request"]["commits_url"]
+    commits = gh.getiter(commits_url)
+    user = event.data['pull_request']['user']['login']
+    body = event.data['pull_request']['body']
+    number = event.data["pull_request"]["number"]
+    fixed_issues = set()
+
+    for m in FIXES_ISSUE.finditer(body):
+        fixed_issues.add(m.group(1))
+
+    async for commit in commits:
+        message = commit['commit']['message']
+        for m in FIXES_ISSUE.finditer(message):
+            fixed_issues.add(m.group(1))
+
+    issues_url = event.data['pull_request']['base']['repo']['issues_url']
+
+    for issue_number in sorted(fixed_issues):
+        issue_url = issues_url.replace('{/number}', f'/{issue_number}')
+        assignees_url = issue_url + '/assignees'
+        if not await should_assign(event, gh, user, issue_url):
+            print(f"PR #{number}: Skipping {assign}ing of @{user} on issue #{issue_number} "
+                  f"as they have previously been manually assigned/unassigned")
+            continue
+        if assign == 'assign':
+            print(f"PR #{number}: Assigning @{user} to issue #{issue_number}")
+            await gh.post(assignees_url, data=dict(assignees=[user]))
+        else:
+            print(f"PR #{number}: Unassigning @{user} to issue #{issue_number}")
+            await gh.delete(assignees_url, data=dict(assignees=[user]))
+
+async def should_assign(event, gh, user, issue_url):
+    # Required to make the timelines API work.
+    # https://developer.github.com/v3/issues/timeline/
+    accept = sansio.accept_format(version='mockingbird-preview')
+
+    timeline_url = issue_url + '/timeline'
+    async for event in gh.getiter(timeline_url, accept=accept):
+        if (event['event'] in ['assigned', 'unassigned'] and
+            event['assignee']['login'] == user and
+            event['actor']['login'] != 'sympy-bot'):
+            return False
+    return True
