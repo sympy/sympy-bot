@@ -308,10 +308,6 @@ async def pull_request_closed(event, gh, *args, **kwargs):
         print(f"PR #{pr_number} was closed without merging, skipping")
         return
 
-    if event.data['pull_request']['user']['login'] == "dependabot[bot]":
-        print(f"PR #{pr_number} was merged but is a Dependabot PR. SymPy Bot not run.")
-        return
-
     status, release_notes_file, changelogs, comment, users = await pull_request_comment_release_notes(event, gh, *args, **kwargs)
 
     wiki_url = event.data['pull_request']['base']['repo']['html_url'] + '.wiki'
