@@ -2,7 +2,7 @@
 # notes. New top-level modules or major submodules should be added here. Keep
 # the entries in alphabetical order, as the order here is the order used in
 # the release notes. Each line should have one valid header. Blank lines and
-# lines that that start with a # are ignored.
+# lines that start with a # are ignored.
 
 abc
 algebras
