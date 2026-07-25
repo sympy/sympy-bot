@@ -30,7 +30,7 @@ good on how to set up Heroku and write GitHub bots. This bot is based on it,
 although it uses Render instead of Heroku.
 
 The bot is tied to Render, so any push to this repo is automatically deployed
-there. The Redner
+there. The Render
 dashboard is at https://dashboard.render.com/
 
 If the bot stops working, look at the logs on the Render dashboard.
