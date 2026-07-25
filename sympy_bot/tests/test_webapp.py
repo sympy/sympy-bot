@@ -148,6 +148,20 @@ existing_added_deleted_comment_url = "https://api.github.com/repos/sympy/sympy/i
 pr_number = 1
 
 valid_PR_description = """
+#### References to other Issues or PRs
+
+#### Brief description of what is fixed or changed
+
+New trig solvers.
+
+#### Other comments
+
+#### AI Generation Disclosure
+
+NO AI USE
+
+#### Release Notes
+
 <!-- BEGIN RELEASE NOTES -->
 * solvers
   * new trig solvers
@@ -155,12 +169,40 @@ valid_PR_description = """
 """
 
 valid_PR_description_no_entry = """
+#### References to other Issues or PRs
+
+#### Brief description of what is fixed or changed
+
+New trig solvers.
+
+#### Other comments
+
+#### AI Generation Disclosure
+
+NO AI USE
+
+#### Release Notes
+
 <!-- BEGIN RELEASE NOTES -->
 NO ENTRY
 <!-- END RELEASE NOTES -->
 """
 
 invalid_PR_description = """
+#### References to other Issues or PRs
+
+#### Brief description of what is fixed or changed
+
+New trig solvers.
+
+#### Other comments
+
+#### AI Generation Disclosure
+
+NO AI USE
+
+#### Release Notes
+
 <!-- BEGIN RELEASE NOTES -->
 
 <!-- END RELEASE NOTES -->
@@ -183,6 +225,20 @@ This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.
 
 <details><summary>Click here to see the pull request description that was parsed.</summary>
 
+
+    #### References to other Issues or PRs
+
+    #### Brief description of what is fixed or changed
+
+    New trig solvers.
+
+    #### Other comments
+
+    #### AI Generation Disclosure
+
+    NO AI USE
+
+    #### Release Notes
 
     <!-- BEGIN RELEASE NOTES -->
     * solvers
@@ -3067,3 +3123,137 @@ async def test_dependabot_pr_closed_skip():
     # Should return None and make no API calls
     assert res is None
     _assert_gh_is_empty(gh)
+
+
+no_template_PR_description = """\
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+def _pr_template_event_data(body, title):
+    return {
+        'pull_request': {
+            'number': 1,
+            'state': 'open',
+            'merged': False,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'user': {
+                'login': 'asmeurer',
+            },
+            'head': {
+                'user': {
+                    'login': 'asmeurer',
+                    },
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': 'master',
+            },
+            'body': body,
+            'title': title,
+            'statuses_url': statuses_url,
+        },
+        'action': 'opened',
+    }
+
+def _pr_template_gh():
+    commits = [
+        {
+            'author': {
+                'login': 'asmeurer',
+            },
+            'commit': {
+                'message': "A good commit",
+            },
+            'sha': sha,
+            'url': commit_url,
+        },
+    ]
+
+    commit = {
+        'files': [
+            {
+                'status': 'modified',
+            },
+        ],
+        'parents': [
+                {
+                    "url": commit_url,
+                    "sha": sha,
+                },
+        ],
+    }
+
+    # No comment from sympy-bot
+    comments = []
+
+    version_file = {
+        'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
+        }
+
+    getiter = {
+        commits_url: commits,
+        comments_url: comments,
+    }
+
+    getitem = {
+        version_url: version_file,
+        commit_url: commit,
+    }
+    post = {
+        comments_url: {
+            'html_url': comment_html_url,
+        },
+        statuses_url: {},
+    }
+
+    return FakeGH(getiter=getiter, getitem=getitem, post=post)
+
+async def test_pr_template_valid_no_comment():
+    event = _event(_pr_template_event_data(valid_PR_description, 'new trig solvers'))
+    gh = _pr_template_gh()
+
+    await router.dispatch(event, gh)
+
+    # Only the release notes comment and status should be posted
+    assert gh.post_urls == [comments_url, statuses_url]
+    for data in gh.post_data:
+        assert "pull request template" not in data.get("body", "")
+
+async def test_pr_template_invalid_comment():
+    # no_template_PR_description has valid release notes but does not follow
+    # the pull request template
+    event = _event(_pr_template_event_data(no_template_PR_description, 'new trig solvers'))
+    gh = _pr_template_gh()
+
+    await router.dispatch(event, gh)
+
+    # The template comment should be posted in addition to the release
+    # notes comment and status
+    assert sorted(gh.post_urls) == sorted([comments_url, statuses_url, comments_url])
+    comments = [data["body"] for data in gh.post_data
+                if "does not follow the [pull request template]" in data.get("body", "")]
+    assert len(comments) == 1
+    comment = comments[0]
+    assert "#### References to other Issues or PRs" in comment
+    assert "#### Brief description of what is fixed or changed" in comment
+    assert "#### Other comments" in comment
+    assert "#### AI Generation Disclosure" in comment
+
+async def test_pr_template_invalid_title_comment():
+    event = _event(_pr_template_event_data(valid_PR_description, 'new trig solvers (fixes #1234)'))
+    gh = _pr_template_gh()
+
+    await router.dispatch(event, gh)
+
+    assert sorted(gh.post_urls) == sorted([comments_url, statuses_url, comments_url])
+    comments = [data["body"] for data in gh.post_data
+                if "does not follow the [pull request template]" in data.get("body", "")]
+    assert len(comments) == 1
+    assert "title should not include the issue number" in comments[0]

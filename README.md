@@ -8,6 +8,12 @@ in the pull request description. It then automatically adds these notes to the
 [release notes](https://github.com/sympy/sympy/wiki/Release-Notes) on the wiki
 when the pull request is merged.
 
+The bot also comments on newly opened pull requests when the pull request
+description does not follow the [pull request
+template](https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md)
+(for example, if section headings were removed, the AI Generation Disclosure
+section was left blank, or the title contains an issue number).
+
 See [the guide on the SymPy
 wiki](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) on how to
 write release notes.

@@ -13,6 +13,7 @@ from gidgethub.aiohttp import GitHubAPI
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
                         get_release_notes_filename, BEGIN_RELEASE_NOTES,
                         END_RELEASE_NOTES)
+from .pr_template import validate_pr_template, TEMPLATE_URL
 from .update_wiki import update_wiki
 
 router = routing.Router()
@@ -70,6 +71,34 @@ async def pull_request_edited(event, gh, *args, **kwargs):
         await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
     await rate_limit_comment(event, gh)
+
+@router.register("pull_request", action="opened")
+async def pull_request_comment_pr_template(event, gh, *args, **kwargs):
+    pr_number = event.data['pull_request']['number']
+    print(f"Checking if PR #{pr_number} follows the pull request template.")
+
+    if event.data['pull_request']['user']['login'] == "dependabot[bot]":
+        print(f"PR #{pr_number} is a Dependabot PR. Skipping the pull request template check.")
+        return
+
+    status, messages = validate_pr_template(
+        event.data['pull_request']['body'],
+        event.data['pull_request'].get('title'),
+    )
+    if status:
+        print(f"PR #{pr_number} follows the pull request template.")
+        return
+
+    template_message = f"""\
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). This pull request description does not follow the [pull request template]({TEMPLATE_URL}):
+
+{chr(10).join(messages)}
+
+Please edit the pull request description to fix these issues.
+"""
+
+    comments_url = event.data["pull_request"]["comments_url"]
+    await gh.post(comments_url, data={"body": template_message})
 
 async def pull_request_noop(event, gh, status_message=None):
     statuses_url = event.data['pull_request']['statuses_url']
