@@ -148,19 +148,9 @@ existing_added_deleted_comment_url = "https://api.github.com/repos/sympy/sympy/i
 pr_number = 1
 
 valid_PR_description = """
-#### References to other Issues or PRs
-
-#### Brief description of what is fixed or changed
-
-New trig solvers.
-
-#### Other comments
-
 #### AI Generation Disclosure
 
 NO AI USE
-
-#### Release Notes
 
 <!-- BEGIN RELEASE NOTES -->
 * solvers
@@ -169,19 +159,9 @@ NO AI USE
 """
 
 valid_PR_description_no_entry = """
-#### References to other Issues or PRs
-
-#### Brief description of what is fixed or changed
-
-New trig solvers.
-
-#### Other comments
-
 #### AI Generation Disclosure
 
 NO AI USE
-
-#### Release Notes
 
 <!-- BEGIN RELEASE NOTES -->
 NO ENTRY
@@ -189,22 +169,21 @@ NO ENTRY
 """
 
 invalid_PR_description = """
-#### References to other Issues or PRs
-
-#### Brief description of what is fixed or changed
-
-New trig solvers.
-
-#### Other comments
-
 #### AI Generation Disclosure
 
 NO AI USE
 
-#### Release Notes
-
 <!-- BEGIN RELEASE NOTES -->
 
+<!-- END RELEASE NOTES -->
+"""
+
+# Follows the release notes conventions, but the AI Generation Disclosure
+# section from the pull request template has been left out
+no_ai_disclosure_PR_description = """
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
 <!-- END RELEASE NOTES -->
 """
 
@@ -226,19 +205,9 @@ This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.
 <details><summary>Click here to see the pull request description that was parsed.</summary>
 
 
-    #### References to other Issues or PRs
-
-    #### Brief description of what is fixed or changed
-
-    New trig solvers.
-
-    #### Other comments
-
     #### AI Generation Disclosure
 
     NO AI USE
-
-    #### Release Notes
 
     <!-- BEGIN RELEASE NOTES -->
     * solvers
@@ -3125,14 +3094,7 @@ async def test_dependabot_pr_closed_skip():
     _assert_gh_is_empty(gh)
 
 
-no_template_PR_description = """\
-<!-- BEGIN RELEASE NOTES -->
-* solvers
-  * new trig solvers
-<!-- END RELEASE NOTES -->
-"""
-
-def _pr_template_event_data(body, title):
+def _ai_disclosure_event_data(body, action='opened'):
     return {
         'pull_request': {
             'number': 1,
@@ -3146,7 +3108,7 @@ def _pr_template_event_data(body, title):
             'head': {
                 'user': {
                     'login': 'asmeurer',
-                    },
+                },
             },
             'base': {
                 'repo': {
@@ -3156,13 +3118,12 @@ def _pr_template_event_data(body, title):
                 'ref': 'master',
             },
             'body': body,
-            'title': title,
             'statuses_url': statuses_url,
         },
-        'action': 'opened',
+        'action': action,
     }
 
-def _pr_template_gh():
+def _ai_disclosure_gh(comments=()):
     commits = [
         {
             'author': {
@@ -3183,77 +3144,92 @@ def _pr_template_gh():
             },
         ],
         'parents': [
-                {
-                    "url": commit_url,
-                    "sha": sha,
-                },
+            {
+                "url": commit_url,
+                "sha": sha,
+            },
         ],
     }
 
-    # No comment from sympy-bot
-    comments = []
-
     version_file = {
         'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n'),
-        }
-
-    getiter = {
-        commits_url: commits,
-        comments_url: comments,
     }
 
-    getitem = {
-        version_url: version_file,
-        commit_url: commit,
-    }
-    post = {
-        comments_url: {
-            'html_url': comment_html_url,
+    return FakeGH(
+        getiter={
+            commits_url: commits,
+            comments_url: list(comments),
         },
-        statuses_url: {},
-    }
+        getitem={
+            version_url: version_file,
+            commit_url: commit,
+        },
+        post={
+            comments_url: {'html_url': comment_html_url},
+            statuses_url: {},
+        },
+        patch={
+            existing_comment_url: {'html_url': comment_html_url},
+        },
+    )
 
-    return FakeGH(getiter=getiter, getitem=getitem, post=post)
+AI_DISCLOSURE_MISSING = "section is missing from the pull request description"
+AI_DISCLOSURE_BLANK = "section must not be left blank"
 
-async def test_pr_template_valid_no_comment():
-    event = _event(_pr_template_event_data(valid_PR_description, 'new trig solvers'))
-    gh = _pr_template_gh()
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+async def test_ai_disclosure_missing(action):
+    event = _event(_ai_disclosure_event_data(no_ai_disclosure_PR_description, action))
+    gh = _ai_disclosure_gh()
 
     await router.dispatch(event, gh)
 
-    # Only the release notes comment and status should be posted
+    # A single comment, not a separate one for the template check
     assert gh.post_urls == [comments_url, statuses_url]
-    for data in gh.post_data:
-        assert "pull request template" not in data.get("body", "")
+    comment = gh.post_data[0]["body"]
+    assert AI_DISCLOSURE_MISSING in comment
+    assert "AI Generation Disclosure" in comment
+    # The release notes themselves are fine, so the check still passes. The
+    # disclosure message is advisory and does not block merging.
+    assert gh.post_data[1]["state"] == "success"
 
-async def test_pr_template_invalid_comment():
-    # no_template_PR_description has valid release notes but does not follow
-    # the pull request template
-    event = _event(_pr_template_event_data(no_template_PR_description, 'new trig solvers'))
-    gh = _pr_template_gh()
-
-    await router.dispatch(event, gh)
-
-    # The template comment should be posted in addition to the release
-    # notes comment and status
-    assert sorted(gh.post_urls) == sorted([comments_url, statuses_url, comments_url])
-    comments = [data["body"] for data in gh.post_data
-                if "does not follow the [pull request template]" in data.get("body", "")]
-    assert len(comments) == 1
-    comment = comments[0]
-    assert "#### References to other Issues or PRs" in comment
-    assert "#### Brief description of what is fixed or changed" in comment
-    assert "#### Other comments" in comment
-    assert "#### AI Generation Disclosure" in comment
-
-async def test_pr_template_invalid_title_comment():
-    event = _event(_pr_template_event_data(valid_PR_description, 'new trig solvers (fixes #1234)'))
-    gh = _pr_template_gh()
+async def test_ai_disclosure_blank():
+    # The section is present but holds nothing but the template's comment
+    body = valid_PR_description.replace('NO AI USE', '<!-- disclose AI use here -->')
+    event = _event(_ai_disclosure_event_data(body))
+    gh = _ai_disclosure_gh()
 
     await router.dispatch(event, gh)
 
-    assert sorted(gh.post_urls) == sorted([comments_url, statuses_url, comments_url])
-    comments = [data["body"] for data in gh.post_data
-                if "does not follow the [pull request template]" in data.get("body", "")]
-    assert len(comments) == 1
-    assert "title should not include the issue number" in comments[0]
+    assert gh.post_urls == [comments_url, statuses_url]
+    assert AI_DISCLOSURE_BLANK in gh.post_data[0]["body"]
+
+async def test_ai_disclosure_present_no_message():
+    event = _event(_ai_disclosure_event_data(valid_PR_description))
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    comment = gh.post_data[0]["body"]
+    assert AI_DISCLOSURE_MISSING not in comment
+    assert AI_DISCLOSURE_BLANK not in comment
+
+async def test_ai_disclosure_message_retracted_on_edit():
+    # A previous run complained about the missing disclosure. The author has
+    # now added it, so the existing comment should be updated in place and the
+    # complaint should be gone.
+    existing_comment = {
+        'user': {
+            'login': 'sympy-bot',
+        },
+        'body': "release notes entry\n\n" + AI_DISCLOSURE_MISSING,
+        'url': existing_comment_url,
+    }
+    event = _event(_ai_disclosure_event_data(valid_PR_description, 'edited'))
+    gh = _ai_disclosure_gh(comments=[existing_comment])
+
+    await router.dispatch(event, gh)
+
+    # The existing comment is patched rather than a new one being posted
+    assert gh.patch_urls == [existing_comment_url]
+    assert gh.post_urls == [statuses_url]
+    assert AI_DISCLOSURE_MISSING not in gh.patch_data[0]["body"]

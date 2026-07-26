@@ -8,11 +8,14 @@ in the pull request description. It then automatically adds these notes to the
 [release notes](https://github.com/sympy/sympy/wiki/Release-Notes) on the wiki
 when the pull request is merged.
 
-The bot also comments on newly opened pull requests when the pull request
-description does not follow the [pull request
+The same comment also reminds contributors to fill in the `#### AI Generation
+Disclosure` section of the [pull request
 template](https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md)
-(for example, if section headings were removed, the AI Generation Disclosure
-section was left blank, or the title contains an issue number).
+when it is missing or left blank, as required by the [policy on AI generated
+code and
+communication](https://docs.sympy.org/dev/contributing/ai-generated-code-policy.html).
+This is advisory only; unlike the release notes check, it does not affect the
+commit status.
 
 See [the guide on the SymPy
 wiki](https://github.com/sympy/sympy/wiki/Writing-Release-Notes) on how to

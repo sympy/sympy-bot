@@ -1,76 +1,63 @@
 #!/usr/bin/env python
 import re
 
-# The section headings from the SymPy pull request template
+from .changelog import BEGIN_RELEASE_NOTES
+
+# The AI Generation Disclosure section of the SymPy pull request template
 # (https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md).
-# The template requires that all of these are kept in the pull request
-# description.
-REQUIRED_SECTIONS = [
-    '#### References to other Issues or PRs',
-    '#### Brief description of what is fixed or changed',
-    '#### Other comments',
-    '#### AI Generation Disclosure',
-    '#### Release Notes',
-]
-
+#
+# This is the only part of the template that the bot checks for. The other
+# sections are conventions, but this one corresponds to a policy requirement
+# (see AI_POLICY_URL), so it is worth complaining about. Checking the other
+# headings produces false positives, e.g. when a contributor deletes an
+# "#### Other comments" section they had nothing to put in.
 AI_DISCLOSURE_HEADING = '#### AI Generation Disclosure'
-
-HTML_COMMENT_RE = re.compile(r'<!--.*?-->', re.DOTALL)
-
-ISSUE_NUMBER_IN_TITLE_RE = re.compile(r'#\d+')
 
 TEMPLATE_URL = 'https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md'
 AI_POLICY_URL = 'https://docs.sympy.org/dev/contributing/ai-generated-code-policy.html'
 
-def _section_text(body, heading):
-    """
-    Return the lines of body under the given #### heading, up to the next
-    #### heading or the end of the body. Returns an empty string if the
-    heading is not present.
-    """
-    section_lines = []
-    in_section = False
-    for line in body.splitlines():
-        stripped = line.strip()
-        if stripped.startswith('#### '):
-            if in_section:
-                break
-            in_section = stripped == heading
-            continue
-        if in_section:
-            section_lines.append(line)
-    return '\n'.join(section_lines)
+# The text under AI_DISCLOSURE_HEADING, up to the next #### heading or the end
+# of the description. Markdown allows a heading to be indented by up to three
+# spaces, and the template's headings may pick up trailing whitespace.
+#
+# BEGIN_RELEASE_NOTES also ends the section. Otherwise a blank disclosure whose
+# "#### Release Notes" heading has been deleted would swallow the release notes
+# below it and look like it had been filled in.
+AI_SECTION_RE = re.compile(
+    rf'^[ \t]*{re.escape(AI_DISCLOSURE_HEADING)}[ \t]*$'
+    rf'(.*?)'
+    rf'(?=^[ \t]*(?:#### |{re.escape(BEGIN_RELEASE_NOTES)})|\Z)',
+    re.DOTALL | re.MULTILINE)
 
-def validate_pr_template(body, title):
+HTML_COMMENT_RE = re.compile(r'<!--.*?-->', re.DOTALL)
+
+def validate_pr_template(body):
     """
-    Validate a pull request description and title against the pull request
-    template.
+    Validate a pull request description against the pull request template.
 
     Returns a tuple (status, messages), where status is True if the pull
-    request follows the template, and messages is a list of strings
-    describing the problems found (empty if status is True).
+    request follows the template, and messages is a list of strings describing
+    the problems found (empty if status is True). This mirrors the return value
+    of changelog.get_changelog, so that the messages can be included in the
+    same comment.
     """
     messages = []
-    body = body or ''
+    section = AI_SECTION_RE.search(body or '')
 
-    missing = [s for s in REQUIRED_SECTIONS if s not in body]
-    if missing:
+    if not section:
         messages.append(
-            '* Do not delete or replace the pull request template; all '
-            'section headings must be kept. The following sections are '
-            'missing: ' + ', '.join(f'`{s}`' for s in missing) + '.')
-
-    if AI_DISCLOSURE_HEADING in body:
-        section = HTML_COMMENT_RE.sub('', _section_text(body, AI_DISCLOSURE_HEADING))
-        if not section.strip():
-            messages.append(
-                f'* The `{AI_DISCLOSURE_HEADING}` section must not be left '
-                'blank. Disclose any AI-generated code or text, or write '
-                f'"NO AI USE". See the [policy on AI generated code and '
-                f'communication]({AI_POLICY_URL}).')
-
-    if title and ISSUE_NUMBER_IN_TITLE_RE.search(title):
+            f'* The `{AI_DISCLOSURE_HEADING}` section is missing from the pull '
+            f'request description. Please restore it from the [pull request '
+            f'template]({TEMPLATE_URL}) and disclose any AI-generated code or '
+            f'text, or write "NO AI USE". See the [policy on AI generated code '
+            f'and communication]({AI_POLICY_URL}).')
+    elif not HTML_COMMENT_RE.sub('', section.group(1)).strip():
+        # The section is present but contains nothing except the explanatory
+        # comment from the template.
         messages.append(
-            '* The pull request title should not include the issue number.')
+            f'* The `{AI_DISCLOSURE_HEADING}` section must not be left blank. '
+            f'Please disclose any AI-generated code or text, or write "NO AI '
+            f'USE". See the [policy on AI generated code and communication]'
+            f'({AI_POLICY_URL}).')
 
     return (not messages, messages)
