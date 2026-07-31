@@ -13,6 +13,7 @@ from gidgethub.aiohttp import GitHubAPI
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
                         get_release_notes_filename, BEGIN_RELEASE_NOTES,
                         END_RELEASE_NOTES)
+from .pr_template import validate_pr_template, TEMPLATE_URL
 from .update_wiki import update_wiki
 
 router = routing.Router()
@@ -67,6 +68,10 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     if event.data['pull_request']['user']['login'] == "dependabot[bot]":
         await pull_request_noop(event, gh, status_message="This is a Dependabot PR. SymPy Bot not run.")
     else:
+        if event.data['action'] == "opened" and is_first_time_contributor(event):
+            closed = await close_pr_if_bad_template(event, gh)
+            if closed:
+                return
         await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
     await rate_limit_comment(event, gh)
@@ -78,6 +83,46 @@ async def pull_request_noop(event, gh, status_message=None):
         description=status_message,
         context='sympy-bot/release-notes',
     ))
+
+# GitHub reports how the author relates to the repository in the pull
+# request's ``author_association``. A first-time contributor is one who hasn't
+# committed to this repository before (FIRST_TIME_CONTRIBUTOR), or to GitHub at
+# all (FIRST_TIMER).
+FIRST_TIME_ASSOCIATIONS = {"FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER"}
+
+def is_first_time_contributor(event):
+    return event.data['pull_request'].get('author_association') in FIRST_TIME_ASSOCIATIONS
+
+async def close_pr_if_bad_template(event, gh):
+    """
+    Check that a newly opened pull request's description follows the pull
+    request template. If it doesn't, post a comment explaining what's wrong and
+    close the pull request.
+
+    Returns True if the pull request was closed, False otherwise.
+    """
+    status, message = validate_pr_template(event.data['pull_request']['body'])
+    if status:
+        return False
+
+    comments_url = event.data["pull_request"]["comments_url"]
+
+    template_comment_message = f"""\
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot).
+
+I'm closing this pull request because its description does not follow the [SymPy pull request template]({TEMPLATE_URL}):
+
+{message}
+
+Feel free to open a new pull request with the same changes, but where you follow \
+the pull request template correctly. Although you cannot reopen this pull \
+request, you should be able to open a new one with the exact same changes.
+"""
+
+    await gh.post(comments_url, data={"body": template_comment_message})
+    await gh.patch(event.data['pull_request']['url'], data={'state': 'closed'})
+
+    return True
 
 async def pull_request_comment_release_notes(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
