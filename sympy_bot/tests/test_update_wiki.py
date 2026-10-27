@@ -29,7 +29,7 @@ def test_run_failure(mocker, capsys):
     with pytest.raises(CalledProcessError) as excinfo:
         run(['sh', '-c', f'echo out {token}; echo err {token} >&2; exit 3'])
     captured = capsys.readouterr()
-    assert captured.out == f'sh -c \'echo out ~~~~~; echo err ~~~~~ >&2; exit 3\'\nout ~~~~~\n\n'
+    assert captured.out == 'sh -c \'echo out ~~~~~; echo err ~~~~~ >&2; exit 3\'\nout ~~~~~\n\n'
     assert captured.err == 'err ~~~~~\n\n'
     e = excinfo.value
     assert e.returncode == 3
