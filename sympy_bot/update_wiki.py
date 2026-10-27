@@ -1,13 +1,20 @@
-import urllib
 import os
 import shlex
 import sys
-from subprocess import run as subprocess_run, PIPE
+from subprocess import run as subprocess_run, PIPE, CalledProcessError
 
 from .changelog import update_release_notes
 
 # Modified from doctr.travis.run_command_hiding_token
 def run(args, shell=False, check=True):
+    """
+    Run a command, printing the command and its output with the GH_AUTH token
+    hidden.
+
+    If check=True and the command fails, the captured output is printed
+    before CalledProcessError is raised, so that the reason for the failure
+    (e.g., the stderr from git) is visible in the logs.
+    """
     token = os.environ.get("GH_AUTH").encode('utf-8')
 
     if not shell:
@@ -23,18 +30,23 @@ def run(args, shell=False, check=True):
         stdout = stderr = PIPE
     else:
         stdout = stderr = None
-    p = subprocess_run(args, stdout=stdout, stderr=stderr, shell=shell, check=check)
+    p = subprocess_run(args, stdout=stdout, stderr=stderr, shell=shell)
+    out = err = None
     if token:
         # XXX: Do this in a way that is streaming
         out, err = p.stdout, p.stderr
-        out = out.replace(token, b"~"*len(token))
-        err = err.replace(token, b"~"*len(token))
+        out = out.replace(token, b"~"*len(token)).decode('utf-8')
+        err = err.replace(token, b"~"*len(token)).decode('utf-8')
         if out:
-            print(out.decode('utf-8'))
+            print(out)
         if err:
-            print(err.decode('utf-8'), file=sys.stderr)
+            print(err, file=sys.stderr)
     sys.stdout.flush()
     sys.stderr.flush()
+    if check and p.returncode:
+        # Use the token-hidden command and output in the exception, since
+        # str(e) ends up in the logs and in the error comment on the PR.
+        raise CalledProcessError(p.returncode, command, output=out, stderr=err)
     return p.returncode
 
 def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number,
@@ -80,9 +92,18 @@ def update_wiki(*, wiki_url, release_notes_file, changelogs, pr_number,
     message = f"Update {release_notes_file} from PR #{pr_number}"
     run(['git', 'commit', '-m', message], check=True)
 
-    parsed_url = list(urllib.parse.urlparse(wiki_url))
-    parsed_url[1] = os.environ.get("GH_AUTH") + '@' + parsed_url[1]
-    auth_url = urllib.parse.urlunparse(parsed_url)
+    # Supply the token via a credential helper rather than embedding it in
+    # the URL. Embedding it in the URL broke in October 2026: libcurl's fix
+    # for CVE-2026-94266 strips credentials from the effective URL, which git
+    # (before 2.43.0-1ubuntu7.4) misinterprets as a redirect and then drops
+    # the credentials, failing with "could not read Username". It also keeps
+    # the token out of the command line, so it cannot leak into tracebacks.
+    # The helper reads GH_AUTH from the environment of the git subprocess.
+    credential_helper = (
+        '!f() { echo username=x-access-token; echo "password=$GH_AUTH"; }; f'
+    )
 
     # TODO: Use a deploy key to do this
-    run(['git', 'push', auth_url, 'master'], check=True)
+    run(['git', '-c', 'credential.helper=', '-c',
+         f'credential.helper={credential_helper}', 'push', wiki_url,
+         'master'], check=True)

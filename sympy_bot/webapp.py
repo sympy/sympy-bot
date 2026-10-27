@@ -340,7 +340,10 @@ The release notes on the [wiki]({release_notes_url}) have been updated.
                 await error_comment(event, gh, e.args[0])
                 raise
             except CalledProcessError as e:
-                await error_comment(event, gh, str(e))
+                message = str(e)
+                if e.stderr:
+                    message += f"\n\n```\n{e.stderr}\n```"
+                await error_comment(event, gh, message)
                 raise
         else:
             print(f"PR #{pr_number} was merged with no change log entries.")
