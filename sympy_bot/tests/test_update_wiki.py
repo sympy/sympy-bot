@@ -1,5 +1,5 @@
 import os
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, run as subprocess_run
 
 import pytest
 # This is required for the tests to run properly
@@ -64,6 +64,16 @@ def test_update_wiki_push_uses_credential_helper(mocker, tmp_path, monkeypatch):
         authors=['asmeurer'],
     )
 
+    # The bot's identity must be passed per command, never written to the
+    # global git config (which would clobber the identity of whoever runs
+    # this locally).
+    assert not any('--global' in call for call in calls)
+    commit = [call for call in calls if 'commit' in call][0]
+    assert '-c' in commit
+    assert 'user.name=SymPy Bot' in commit
+    assert 'user.email=sympy+bot@sympy.org' in commit
+    assert 'commit.gpgsign=false' in commit
+
     push = calls[-1]
     assert push[0] == 'git'
     assert push[-3:] == ['push', wiki_url, 'master']
@@ -87,3 +97,50 @@ def test_update_wiki(mocker):
         pr_number='14942',
         authors=['asmeurer'],
     )
+
+def test_update_wiki_local_repo(mocker, tmp_path, monkeypatch):
+    """
+    Run update_wiki for real against a local bare repository standing in for
+    the wiki, and check that it commits as the bot without touching the
+    global git config.
+    """
+    mocker.patch.dict(os.environ, {"GH_AUTH": token})
+    # Isolate the global git config so the test neither reads the user's
+    # config (e.g. commit signing) nor can modify it.
+    global_config = tmp_path / 'gitconfig'
+    global_config.write_text('')
+    monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(global_config))
+
+    def git(*args, cwd):
+        return subprocess_run(['git', *args], cwd=cwd, check=True,
+                              capture_output=True, text=True).stdout
+
+    # Create a "remote" bare repo named like a GitHub wiki, with one commit
+    # on master containing the release notes file.
+    remote = tmp_path / 'remote' / 'sympy-bot.wiki'
+    remote.parent.mkdir()
+    git('init', '--bare', '-b', 'master', str(remote), cwd=tmp_path)
+    seed = tmp_path / 'seed'
+    git('clone', '-q', str(remote), str(seed), cwd=tmp_path)
+    (seed / 'Release-Notes-Tests.md').write_text("## Changes\n\n## Authors\n")
+    git('add', 'Release-Notes-Tests.md', cwd=seed)
+    git('-c', 'user.name=Seed', '-c', 'user.email=seed@example.com',
+        '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'seed', cwd=seed)
+    git('push', '-q', 'origin', 'master', cwd=seed)
+
+    workdir = tmp_path / 'work'
+    workdir.mkdir()
+    monkeypatch.chdir(workdir)
+    update_wiki(
+        wiki_url=str(remote),
+        release_notes_file='Release-Notes-Tests.md',
+        changelogs={'other': ['* Release notes update']},
+        pr_number='14942',
+        authors=['asmeurer'],
+    )
+
+    log = git('log', '--format=%an <%ae> %s', 'master', cwd=remote)
+    assert log.splitlines()[0] == 'SymPy Bot <sympy+bot@sympy.org> Update Release-Notes-Tests.md from PR #14942'
+    contents = git('show', 'master:Release-Notes-Tests.md', cwd=remote)
+    assert '[#14942]' in contents
+    assert global_config.read_text() == ''
