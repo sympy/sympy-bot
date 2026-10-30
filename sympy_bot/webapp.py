@@ -118,14 +118,13 @@ async def update_ai_disclosure_warning(event, gh):
     """
     pull_request = event.data['pull_request']
     action = event.data['action']
-    issue_url = pull_request['issue_url']
     comments_url = pull_request['comments_url']
 
     if action == "opened" and pull_request.get('author_association') in FIRST_TIME_ASSOCIATIONS:
         status, message = check_ai_disclosure(pull_request['body'])
         if status:
             return
-        await gh.post(issue_url + '/labels', data={'labels': [AI_DISCLOSURE_LABEL]})
+        await gh.post(pull_request['issue_url'] + '/labels', data={'labels': [AI_DISCLOSURE_LABEL]})
         await gh.post(comments_url, data={"body": f"""\
 {AI_DISCLOSURE_MARKER}
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). This pull request's description is missing something required by the [SymPy pull request template](https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md):
@@ -137,9 +136,9 @@ Please edit the pull request description to fix this. If it is not fixed within 
     elif has_ai_disclosure_label(event):
         if action == "reopened":
             # A maintainer reopened the pull request, so don't close it again.
-            await remove_ai_disclosure_label(issue_url, gh)
+            await remove_ai_disclosure_label(pull_request['issue_url'], gh)
         elif action == "edited" and check_ai_disclosure(pull_request['body'])[0]:
-            await withdraw_ai_disclosure_warning(issue_url, comments_url, gh)
+            await withdraw_ai_disclosure_warning(pull_request['issue_url'], comments_url, gh)
 
 async def close_expired_ai_disclosure_prs(event, gh):
     """
