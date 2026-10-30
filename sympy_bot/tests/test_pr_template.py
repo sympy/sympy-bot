@@ -1,183 +1,122 @@
-from ..pr_template import (
-    validate_pr_template,
-    PR_TEMPLATE,
-    REQUIRED_HEADINGS,
-    CONTENT_REQUIRED_HEADINGS,
-    REQUIRED_TEMPLATE_COMMENTS,
-)
+from pytest import mark
+parametrize = mark.parametrize
+
+from ..pr_template import check_ai_disclosure
+
+# The instructions in the template, as HTML comments
+COMMENTED_TEMPLATE = """\
+<!-- DO NOT DELETE OR REPLACE THIS TEMPLATE or the PR will be closed. -->
+
+#### References to other Issues or PRs
+
+<!-- If there is an issue related to this PR, include a link to the issue here. -->
 
 
-def make_compliant(release_notes="* solvers\n  * new trig solvers"):
-    """
-    Build a template-compliant description from the canonical template by
-    filling in the two content-required sections and the release notes.
-    """
-    desc = PR_TEMPLATE
-    desc = desc.replace(
-        "#### Brief description of what is fixed or changed\n",
-        "#### Brief description of what is fixed or changed\n\nFixed a bug in the solvers module.\n",
-        1,
-    )
-    desc = desc.replace(
-        "#### AI Generation Disclosure\n",
-        "#### AI Generation Disclosure\n\nNO AI USE\n",
-        1,
-    )
-    desc = desc.replace(
-        "<!-- BEGIN RELEASE NOTES -->\n\n<!-- END RELEASE NOTES -->",
-        "<!-- BEGIN RELEASE NOTES -->\n" + release_notes + "\n<!-- END RELEASE NOTES -->",
-        1,
-    )
-    return desc
+#### Brief description of what is fixed or changed
+
+{brief}
+
+#### Other comments
 
 
-def test_required_template_comments_extracted():
-    # The top comment, the References comment, the AI comment, the Release
-    # Notes comment, and the BEGIN/END markers.
-    assert len(REQUIRED_TEMPLATE_COMMENTS) == 6
-    assert "<!-- BEGIN RELEASE NOTES -->" in REQUIRED_TEMPLATE_COMMENTS
-    assert "<!-- END RELEASE NOTES -->" in REQUIRED_TEMPLATE_COMMENTS
-    for comment in REQUIRED_TEMPLATE_COMMENTS:
-        assert comment in PR_TEMPLATE
+#### AI Generation Disclosure
+
+<!-- If this pull request includes AI-generated code or text, please disclose
+the tool used and specify which lines were generated. Otherwise, write "NO AI USE". -->
+
+{disclosure}
+
+#### Release Notes
+
+<!-- Write the release notes for this release below. -->
+
+<!-- BEGIN RELEASE NOTES -->
+NO ENTRY
+<!-- END RELEASE NOTES -->
+"""
+
+# The same template with the instructions removed, leaving only what the
+# release notes check needs
+UNCOMMENTED_TEMPLATE = """\
+#### References to other Issues or PRs
 
 
-def test_compliant():
-    status, message = validate_pr_template(make_compliant())
-    assert status is True
-    assert message == ""
+#### Brief description of what is fixed or changed
+
+{brief}
+
+#### Other comments
 
 
-def test_compliant_no_entry():
-    status, message = validate_pr_template(make_compliant("NO ENTRY"))
-    assert status is True
-    assert message == ""
+#### AI Generation Disclosure
+
+{disclosure}
+
+#### Release Notes
+
+<!-- BEGIN RELEASE NOTES -->
+NO ENTRY
+<!-- END RELEASE NOTES -->
+"""
+
+templates = parametrize('template', [COMMENTED_TEMPLATE, UNCOMMENTED_TEMPLATE])
+line_endings = parametrize('line_ending', ['\n', '\r\n'])
 
 
-def test_compliant_empty_release_notes():
-    # Release Notes content is validated elsewhere, so an empty release notes
-    # block is still template-compliant as far as this validator is concerned.
-    status, message = validate_pr_template(make_compliant(""))
-    assert status is True
-    assert message == ""
+def _description(template, line_ending, disclosure, brief="Fixed a bug."):
+    desc = template.format(brief=brief, disclosure=disclosure)
+    return desc.replace('\n', line_ending)
 
 
-def test_none():
-    status, message = validate_pr_template(None)
+@templates
+@line_endings
+@parametrize('disclosure', [
+    "NO AI USE",
+    "Claude wrote the tests.",
+    "### Tools\n\nClaude wrote the tests.",
+    "## Tools",
+])
+def test_disclosure_present(template, line_ending, disclosure):
+    desc = _description(template, line_ending, disclosure)
+    assert check_ai_disclosure(desc) == (True, '')
+
+
+@templates
+@line_endings
+@parametrize('disclosure', ["", "   \n\n  ", "<!-- NO AI USE -->"])
+def test_disclosure_empty(template, line_ending, disclosure):
+    status, message = check_ai_disclosure(_description(template, line_ending, disclosure))
     assert status is False
-    assert message
+    assert "`#### AI Generation Disclosure` section is empty" in message
+    assert "NO AI USE" in message
 
 
-def test_empty():
-    status, message = validate_pr_template("")
+@line_endings
+def test_disclosure_empty_at_end_of_description(line_ending):
+    desc = f"#### Brief description of what is fixed or changed{line_ending}Fixed a bug.{line_ending}#### AI Generation Disclosure{line_ending}"
+    status, message = check_ai_disclosure(desc)
     assert status is False
-    # Everything is wrong: headings, comments, and content.
-    assert "section headings" in message
-    assert "template's HTML comments" in message
+    assert "section is empty" in message
 
 
-def test_random_text():
-    status, message = validate_pr_template("Here is my great PR, please merge it.")
+@parametrize('desc', [
+    None,
+    "",
+    "Please merge my great PR.",
+    "AI Generation Disclosure: NO AI USE",
+    "### AI Generation Disclosure\n\nNO AI USE",
+    "##### AI Generation Disclosure\n\nNO AI USE",
+    "#### ai generation disclosure\n\nNO AI USE",
+    "#### AI Generation Disclosure: NO AI USE",
+    "<!-- #### AI Generation Disclosure\n\nNO AI USE -->",
+])
+def test_disclosure_missing(desc):
+    status, message = check_ai_disclosure(desc)
     assert status is False
-    assert message
+    assert "`#### AI Generation Disclosure` section is missing" in message
+    assert "NO AI USE" in message
 
 
-def test_missing_one_heading():
-    desc = make_compliant().replace("#### Other comments\n", "", 1)
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "Other comments" in message
-    # The other headings are fine, so they should not be listed as missing.
-    assert "References to other Issues or PRs" not in message
-
-
-def test_missing_template_comment():
-    # Delete the References comment. Its content is not required, so only the
-    # comment check should fire.
-    references_comment = [c for c in REQUIRED_TEMPLATE_COMMENTS
-                          if "waste reviewer's time" in c][0]
-    desc = make_compliant().replace(references_comment, "", 1)
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "template's HTML comments" in message
-
-
-def test_modified_template_comment():
-    # Rewording a comment (as AI often does) must fail: exact match is required.
-    desc = make_compliant().replace(
-        "DO NOT DELETE OR REPLACE THIS TEMPLATE",
-        "Do not delete or replace this template",
-        1,
-    )
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "template's HTML comments" in message
-
-
-def test_deleted_ai_comment():
-    ai_comment = [c for c in REQUIRED_TEMPLATE_COMMENTS
-                  if "AI-generated code or text" in c][0]
-    desc = make_compliant().replace(ai_comment, "", 1)
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "template's HTML comments" in message
-
-
-def test_empty_brief_description():
-    # Compliant except the Brief description is left blank.
-    desc = PR_TEMPLATE.replace(
-        "#### AI Generation Disclosure\n",
-        "#### AI Generation Disclosure\n\nNO AI USE\n",
-        1,
-    )
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "empty" in message
-    assert "Brief description of what is fixed or changed" in message
-
-
-def test_empty_ai_disclosure():
-    # Compliant except the AI Generation Disclosure is left blank.
-    desc = PR_TEMPLATE.replace(
-        "#### Brief description of what is fixed or changed\n",
-        "#### Brief description of what is fixed or changed\n\nFixed a bug.\n",
-        1,
-    )
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "empty" in message
-    assert "AI Generation Disclosure" in message
-
-
-def test_ai_disclosure_only_comment_is_empty():
-    # The AI section contains only the template comment (no author text). After
-    # stripping the comment it is empty, so it must fail the content check.
-    desc = make_compliant().replace("\n\nNO AI USE\n", "\n", 1)
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "AI Generation Disclosure" in message
-
-
-def test_heading_must_be_verbatim():
-    # Changing a heading's level or wording counts as missing: the template
-    # headings must be kept exactly as they are.
-    desc = make_compliant().replace(
-        "#### References to other Issues or PRs",
-        "###### references to   other issues or prs",
-        1,
-    )
-    status, message = validate_pr_template(desc)
-    assert status is False
-    assert "References to other Issues or PRs" in message
-
-
-def test_content_required_is_subset_of_required():
-    assert set(CONTENT_REQUIRED_HEADINGS) <= set(REQUIRED_HEADINGS)
-
-
-def test_multiple_problems_reported_together():
-    # An empty description should report both missing headings and missing
-    # comments in one message.
-    status, message = validate_pr_template("")
-    assert status is False
-    assert "section headings" in message
-    assert "template's HTML comments" in message
+def test_only_the_ai_disclosure_is_checked():
+    desc = "#### AI Generation Disclosure\n\nNO AI USE\n"
+    assert check_ai_disclosure(desc) == (True, '')

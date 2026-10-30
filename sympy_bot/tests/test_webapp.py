@@ -24,14 +24,15 @@ The GitHub API docs are useful:
 
 import datetime
 import base64
-import textwrap
 from subprocess import CalledProcessError
 import os
+import http
+from unittest.mock import AsyncMock
 
-from gidgethub import sansio
+from gidgethub import sansio, BadRequest
 
-from ..webapp import router, close_pr_if_bad_template
-from ..pr_template import PR_TEMPLATE
+from ..webapp import (router, main_post, close_expired_ai_disclosure_prs,
+                      AI_DISCLOSURE_LABEL, AI_DISCLOSURE_MARKER)
 
 # These are required for the tests to run properly
 import pytest_aiohttp
@@ -147,55 +148,28 @@ comment_html_url2 = 'https://github.com/sympy/sympy/pulls/1#issuecomment-2'
 statuses_url = "https://api.github.com/repos/sympy/sympy/statuses/4a09f9f253c7372ec857774b1fe114b1266013fe"
 existing_comment_url = "https://api.github.com/repos/sympy/sympy/issues/comments/1"
 existing_added_deleted_comment_url = "https://api.github.com/repos/sympy/sympy/issues/comments/2"
-pr_url = "https://api.github.com/repos/sympy/sympy/pulls/1"
 pr_number = 1
 
-# A description that does NOT follow the pull request template (no headings, no
-# template comments) but that IS a valid release notes block. Used to check
-# that the template check only runs on the ``opened`` action.
-non_template_description = """
+valid_PR_description = """
 <!-- BEGIN RELEASE NOTES -->
 * solvers
   * new trig solvers
 <!-- END RELEASE NOTES -->
 """
 
-def _make_PR_description(release_notes):
-    """
-    Build a description that follows the pull request template (so the template
-    check passes silently) with the given release notes inserted into the
-    BEGIN/END RELEASE NOTES block.
+valid_PR_description_no_entry = """
+<!-- BEGIN RELEASE NOTES -->
+NO ENTRY
+<!-- END RELEASE NOTES -->
+"""
 
-    The Brief description and AI Generation Disclosure sections must contain
-    text or the template check fails them as empty, so we fill them in.
-    """
-    desc = PR_TEMPLATE
-    desc = desc.replace(
-        "#### Brief description of what is fixed or changed\n",
-        "#### Brief description of what is fixed or changed\n\nFixed a bug in the solvers module.\n",
-        1,
-    )
-    desc = desc.replace(
-        "#### AI Generation Disclosure\n",
-        "#### AI Generation Disclosure\n\nNO AI USE\n",
-        1,
-    )
-    desc = desc.replace(
-        "<!-- BEGIN RELEASE NOTES -->\n\n<!-- END RELEASE NOTES -->",
-        "<!-- BEGIN RELEASE NOTES -->\n" + release_notes + "\n<!-- END RELEASE NOTES -->",
-        1,
-    )
-    return desc
+invalid_PR_description = """
+<!-- BEGIN RELEASE NOTES -->
 
-valid_PR_description = _make_PR_description("* solvers\n  * new trig solvers")
+<!-- END RELEASE NOTES -->
+"""
 
-valid_PR_description_no_entry = _make_PR_description("NO ENTRY")
-
-# Template-compliant, but with empty release notes (the release notes check
-# fails on this, not the template check).
-invalid_PR_description = _make_PR_description("")
-
-release_notes_comment_body = f"""\
+release_notes_comment_body = """\
 :white_check_mark:
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
@@ -212,7 +186,12 @@ This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.
 
 <details><summary>Click here to see the pull request description that was parsed.</summary>
 
-{textwrap.indent(valid_PR_description, '    ')}
+
+    <!-- BEGIN RELEASE NOTES -->
+    * solvers
+      * new trig solvers
+    <!-- END RELEASE NOTES -->
+
 
 </details><p>
 """
@@ -390,7 +369,7 @@ async def test_status_good_new_comment(action):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in valid_PR_description:
         assert line in comment
@@ -559,7 +538,7 @@ async def test_status_good_existing_comment(action):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in valid_PR_description:
         assert line in comment
@@ -718,7 +697,7 @@ async def test_closed_with_merging(mocker, action):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in valid_PR_description:
         assert line in comment
@@ -887,7 +866,7 @@ async def test_closed_with_merging_no_entry(mocker, action):
     assert "No release notes entry will be added for this pull request." in comment
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     assert "NO ENTRY" in comment
 
@@ -1069,7 +1048,7 @@ async def test_closed_with_merging_update_wiki_error(mocker, action, exception):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in valid_PR_description:
         assert line in comment
@@ -1248,7 +1227,7 @@ async def test_closed_with_merging_bad_status_error(mocker, action):
     assert ":white_check_mark:" not in comment
     assert ":x:" in comment
     assert "new trig solvers" not in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "There was an issue" in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in invalid_PR_description:
@@ -1390,7 +1369,7 @@ async def test_status_bad_new_comment(action):
     assert ":white_check_mark:" not in comment
     assert ":x:" in comment
     assert "new trig solvers" not in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "There was an issue" in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in invalid_PR_description:
@@ -1557,7 +1536,7 @@ async def test_status_bad_existing_comment(action):
     assert ":white_check_mark:" not in comment
     assert ":x:" in comment
     assert "new trig solvers" not in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "There was an issue" in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in invalid_PR_description:
@@ -1841,7 +1820,7 @@ async def test_header_in_message(action):
     comment = post_data[0]["body"]
     assert ":white_check_mark:" not in comment
     assert ":x:" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     assert "good order" not in comment
     assert sha_1 in comment
@@ -2140,7 +2119,7 @@ async def test_no_user_logins_in_commits(action, include_extra):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     for line in valid_PR_description:
         assert line in comment
@@ -2293,7 +2272,7 @@ async def test_status_good_new_comment_other_base(action):
     assert ":white_check_mark:" in comment
     assert ":x:" not in comment
     assert "new trig solvers" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "https://github.com/sympy/sympy-bot" in comment
     assert '1.2.1' not in comment
     assert '1.4' in comment
@@ -2535,7 +2514,7 @@ async def test_added_deleted_new_comment(action):
     assert ":white_check_mark:" not in comment
     assert ":x:" not in comment
     assert "\U0001f7e0" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "add new files" in comment
     assert "delete files" in comment
     assert "https://github.com/sympy/sympy-bot" in comment
@@ -2784,7 +2763,7 @@ async def test_added_deleted_existing_comment(action):
     assert ":white_check_mark:" not in comment
     assert ":x:" not in comment
     assert "\U0001f7e0" in comment
-    assert "There was an error" not in comment
+    assert "error" not in comment
     assert "add new files" in comment
     assert "delete files" in comment
     assert "https://github.com/sympy/sympy-bot" in comment
@@ -3092,23 +3071,41 @@ async def test_dependabot_pr_closed_skip():
     assert res is None
     _assert_gh_is_empty(gh)
 
+pr_url = "https://api.github.com/repos/sympy/sympy/pulls/1"
+issue_url = "https://api.github.com/repos/sympy/sympy/issues/1"
+repo_url = "https://api.github.com/repos/sympy/sympy"
+labels_url = issue_url + '/labels'
+label_url = labels_url + '/' + AI_DISCLOSURE_LABEL
+issue_events_url = issue_url + '/events'
+expired_issues_url = f'{repo_url}/issues?labels={AI_DISCLOSURE_LABEL}&state=open'
+warning_comment_url = "https://api.github.com/repos/sympy/sympy/issues/comments/3"
 
-# ---------------------------------------------------------------------------
-# Pull request template check
-# ---------------------------------------------------------------------------
+description_with_disclosure = """
+#### AI Generation Disclosure
 
-def _template_event_data(*, body, action='opened', user='asmeurer',
-                         author_association='FIRST_TIME_CONTRIBUTOR'):
-    return {
+NO AI USE
+
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+def _ai_disclosure_event(*, body=description_with_disclosure, action='opened',
+                         state='open', author_association='NONE',
+                         labeled=False):
+    return _event({
         'pull_request': {
             'number': 1,
-            'state': 'open',
+            'state': state,
             'merged': False,
             'url': pr_url,
+            'issue_url': issue_url,
             'comments_url': comments_url,
             'commits_url': commits_url,
-            'user': {'login': user},
+            'user': {'login': 'asmeurer'},
             'author_association': author_association,
+            'labels': [{'name': AI_DISCLOSURE_LABEL}] if labeled else [],
             'head': {
                 'user': {'login': 'asmeurer'},
             },
@@ -3122,143 +3119,270 @@ def _template_event_data(*, body, action='opened', user='asmeurer',
             'body': body,
             'statuses_url': statuses_url,
         },
+        'repository': {'url': repo_url},
         'action': action,
+    })
+
+def _ai_disclosure_gh(*, existing_comments=(), issue_events=(), patch=None):
+    """
+    A FakeGH with what the release notes and added/deleted checks need
+    """
+    commits = [
+        {
+            'author': {'login': 'asmeurer'},
+            'commit': {'message': "A good commit"},
+            'sha': sha,
+            'url': commit_url,
+        },
+    ]
+    commit = {
+        'files': [{'status': 'modified'}],
+        'parents': [{"url": commit_url, "sha": sha}],
     }
+    version_file = {'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n')}
 
+    return FakeGH(
+        getiter={
+            commits_url: commits,
+            comments_url: list(existing_comments),
+            issue_events_url: list(issue_events),
+        },
+        getitem={version_url: version_file, commit_url: commit},
+        post={
+            comments_url: {'html_url': comment_html_url},
+            statuses_url: {},
+            labels_url: [],
+        },
+        patch=patch or {},
+        delete={label_url: None, warning_comment_url: None},
+    )
 
-async def test_close_pr_if_bad_template_comments_and_closes():
-    event = _event(_template_event_data(body="Please merge my great PR."))
+def _posted_comments(gh):
+    return [data['body'] for url, data in zip(gh.post_urls, gh.post_data)
+            if url == comments_url]
 
-    post = {comments_url: {'html_url': comment_html_url}}
-    patch = {pr_url: {}}
+def _warnings(gh):
+    return [comment for comment in _posted_comments(gh)
+            if AI_DISCLOSURE_MARKER in comment]
 
-    gh = FakeGH(post=post, patch=patch)
+@parametrize('author_association', ['NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'])
+@parametrize('body', [valid_PR_description, invalid_PR_description])
+async def test_ai_disclosure_warning(author_association, body):
+    event = _ai_disclosure_event(body=body, author_association=author_association)
+    gh = _ai_disclosure_gh()
 
-    closed = await close_pr_if_bad_template(event, gh)
+    await router.dispatch(event, gh)
 
-    assert closed is True
-    # A comment was posted...
-    assert gh.post_urls == [comments_url]
-    assert gh.post_data[0].keys() == {"body"}
-    comment = gh.post_data[0]["body"]
-    assert "does not follow the [SymPy pull request template]" in comment
-    assert "open a new pull request" in comment
-    assert "https://github.com/sympy/sympy-bot" in comment
-    # ...and the PR was closed.
-    assert gh.patch_urls == [pr_url]
-    assert gh.patch_data == [{'state': 'closed'}]
-
-
-async def test_close_pr_if_bad_template_good_does_nothing():
-    event = _event(_template_event_data(body=valid_PR_description))
-
-    gh = FakeGH()
-
-    closed = await close_pr_if_bad_template(event, gh)
-
-    assert closed is False
-    assert gh.post_urls == []
+    assert gh.post_data[gh.post_urls.index(labels_url)] == {'labels': [AI_DISCLOSURE_LABEL]}
+    warnings = _warnings(gh)
+    assert len(warnings) == 1
+    assert "`#### AI Generation Disclosure` section is missing" in warnings[0]
+    assert "within 48 hours" in warnings[0]
+    # The warning must not be mistaken for the other comments the bot updates
+    assert "release notes entry" not in warnings[0]
+    assert "add or delete" not in warnings[0]
+    # The pull request stays open, and the release notes check still runs
     assert gh.patch_urls == []
-    assert gh.getiter_urls == []
+    assert statuses_url in gh.post_urls
+    assert len(_posted_comments(gh)) == 2
 
+async def test_ai_disclosure_good_no_warning():
+    gh = _ai_disclosure_gh()
 
-async def test_close_pr_if_bad_template_via_router():
-    # End to end through the router: a bad description on ``opened`` closes the
-    # PR and does NOT run the release notes check.
-    event = _event(_template_event_data(body="Please merge my great PR."))
+    await router.dispatch(_ai_disclosure_event(), gh)
 
-    post = {comments_url: {'html_url': comment_html_url}}
-    patch = {pr_url: {}}
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+    assert statuses_url in gh.post_urls
 
-    gh = FakeGH(post=post, patch=patch)
+@parametrize('author_association', ['CONTRIBUTOR', 'COLLABORATOR', 'MEMBER', 'OWNER'])
+async def test_ai_disclosure_not_first_time(author_association):
+    event = _ai_disclosure_event(body=valid_PR_description, author_association=author_association)
+    gh = _ai_disclosure_gh()
 
     await router.dispatch(event, gh)
 
-    # Only the template comment was posted; no release notes status.
-    assert gh.post_urls == [comments_url]
-    assert statuses_url not in gh.post_urls
-    assert gh.patch_urls == [pr_url]
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+    assert statuses_url in gh.post_urls
+
+@parametrize('action', ['reopened', 'edited', 'synchronize'])
+async def test_ai_disclosure_warning_only_on_opened(action):
+    event = _ai_disclosure_event(body=valid_PR_description, action=action)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+
+async def test_ai_disclosure_fixed_withdraws_warning():
+    event = _ai_disclosure_event(action='edited', labeled=True)
+    gh = _ai_disclosure_gh(existing_comments=[
+        {'user': {'login': 'asmeurer'}, 'body': AI_DISCLOSURE_MARKER, 'url': existing_comment_url},
+        {'user': {'login': 'sympy-bot'}, 'body': AI_DISCLOSURE_MARKER, 'url': warning_comment_url},
+    ])
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url, warning_comment_url]
+    assert gh.patch_urls == []
+
+@parametrize('action', ['edited', 'synchronize'])
+async def test_ai_disclosure_not_fixed_keeps_label(action):
+    event = _ai_disclosure_event(body=valid_PR_description, action=action, labeled=True)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == []
+    assert _warnings(gh) == []
+
+async def test_ai_disclosure_maintainer_reopened():
+    # The disclosure is still missing, but a maintainer reopened the pull
+    # request, so removing the label stops the bot from closing it again.
+    event = _ai_disclosure_event(body=valid_PR_description, action='reopened', labeled=True)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url]
+    assert gh.patch_urls == []
+
+def _timestamp(**ago):
+    time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(**ago)
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+def _issue(number, *, body=valid_PR_description, **ago):
+    return {
+        'number': number,
+        'body': body,
+        'created_at': _timestamp(**ago),
+        'pull_request': {},
+        'url': f'{repo_url}/issues/{number}',
+        'comments_url': f'{repo_url}/issues/{number}/comments',
+    }
+
+async def test_close_expired_ai_disclosure_prs():
+    not_a_pr = _issue(4, hours=49)
+    del not_a_pr['pull_request']
+    expired = _issue(2, hours=49)
+    gh = FakeGH(
+        getiter={expired_issues_url: [_issue(1, hours=47), expired, not_a_pr]},
+        post={expired['comments_url']: {}},
+        patch={expired['url']: {}},
+    )
+
+    await close_expired_ai_disclosure_prs(_ai_disclosure_event(), gh)
+
+    assert gh.post_urls == [expired['comments_url']]
+    assert "after 48 hours" in gh.post_data[0]['body']
+    assert "You do not need to open a new pull request" in gh.post_data[0]['body']
+    assert gh.patch_urls == [expired['url']]
     assert gh.patch_data == [{'state': 'closed'}]
-    # The release notes check never ran.
+
+async def test_close_expired_ai_disclosure_prs_already_fixed():
+    # The webhook for the edit that added the disclosure was missed
+    fixed = _issue(2, body=description_with_disclosure, hours=49)
+    warning = {'user': {'login': 'sympy-bot'}, 'body': AI_DISCLOSURE_MARKER, 'url': warning_comment_url}
+    fixed_label_url = f"{fixed['url']}/labels/{AI_DISCLOSURE_LABEL}"
+    gh = FakeGH(
+        getiter={expired_issues_url: [fixed], fixed['comments_url']: [warning]},
+        delete={fixed_label_url: None, warning_comment_url: None},
+    )
+
+    await close_expired_ai_disclosure_prs(_ai_disclosure_event(), gh)
+
+    assert gh.delete_urls == [fixed_label_url, warning_comment_url]
+    assert gh.patch_urls == []
+    assert gh.post_urls == []
+
+class FakeRequest:
+    headers = {}
+
+    async def read(self):
+        return b''
+
+async def test_main_post_closes_expired_prs(mocker):
+    gh = FakeGH(getiter={expired_issues_url: []})
+    mocker.patch('sympy_bot.webapp.GitHubAPI', return_value=gh)
+    mocker.patch('sympy_bot.webapp.sansio.Event.from_http',
+                 return_value=_ai_disclosure_event(action='closed'))
+
+    response = await main_post(FakeRequest())
+
+    assert response.status == 200
+    assert gh.getiter_urls == [expired_issues_url]
+
+closed_by_bot = [
+    {'event': 'closed', 'actor': {'login': 'asmeurer'}},
+    {'event': 'reopened', 'actor': {'login': 'asmeurer'}},
+    {'event': 'labeled', 'actor': {'login': 'asmeurer'}},
+    {'event': 'closed', 'actor': {'login': 'sympy-bot'}},
+]
+
+async def test_ai_disclosure_fixed_reopens():
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot, patch={pr_url: {}})
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url]
+    assert gh.patch_urls == [pr_url]
+    assert gh.patch_data == [{'state': 'open'}]
+    assert "I have reopened this pull request" in _posted_comments(gh)[0]
+    # The other checks run when GitHub sends the reopened event
+    assert statuses_url not in gh.post_urls
+
+async def test_ai_disclosure_fixed_reopen_fails():
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
+    gh.patch = patch = AsyncMock(side_effect=BadRequest(http.HTTPStatus.UNPROCESSABLE_ENTITY))
+
+    with raises(BadRequest):
+        await router.dispatch(event, gh)
+
+    patch.assert_called_once_with(pr_url, data={'state': 'open'})
+    assert gh.delete_urls == [label_url]
+    assert "Please open a new pull request" in _posted_comments(gh)[0]
+
+@parametrize('closer', ['asmeurer', None])
+async def test_ai_disclosure_fixed_no_reopen_if_not_closed_by_bot(closer):
+    # A maintainer closed the pull request after the bot did
+    issue_events = closed_by_bot + [{'event': 'closed', 'actor': {'login': closer}}] if closer else []
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=issue_events)
+
+    await router.dispatch(event, gh)
+
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []
+
+@parametrize('body,labeled', [
+    # Still no disclosure
+    (valid_PR_description, True),
+    # The pull request wasn't waiting for a disclosure
+    (description_with_disclosure, False),
+])
+async def test_ai_disclosure_closed_no_reopen(body, labeled):
+    event = _ai_disclosure_event(body=body, action='edited', state='closed', labeled=labeled)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
+
+    await router.dispatch(event, gh)
+
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []
     assert gh.getiter_urls == []
 
-
-@parametrize('author_association', ['CONTRIBUTOR', 'MEMBER', 'OWNER', 'NONE'])
-async def test_close_pr_if_bad_template_skips_non_first_timers(author_association):
-    # A bad description on ``opened`` from someone who is NOT a first-time
-    # contributor must NOT close the PR; the release notes check runs as usual.
-    event = _event(_template_event_data(
-        body=non_template_description,
-        action='opened',
-        author_association=author_association,
-    ))
-
-    commits = [
-        {
-            'author': {'login': 'asmeurer'},
-            'commit': {'message': "A good commit"},
-            'sha': sha,
-            'url': commit_url,
-        },
-    ]
-    commit = {
-        'files': [{'status': 'modified'}],
-        'parents': [{"url": commit_url, "sha": sha}],
-    }
-    comments = [{'user': {'login': 'asmeurer'}, 'body': "comment"}]
-    version_file = {'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n')}
-
-    getiter = {commits_url: commits, comments_url: comments}
-    getitem = {version_url: version_file, commit_url: commit}
-    post = {comments_url: {'html_url': comment_html_url}, statuses_url: {}}
-
-    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
+@parametrize('action', ['reopened', 'synchronize'])
+async def test_ai_disclosure_closed_other_actions_no_reopen(action):
+    event = _ai_disclosure_event(action=action, state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
 
     await router.dispatch(event, gh)
 
-    # The PR was not closed and no template comment was posted.
-    assert pr_url not in gh.patch_urls
-    for data in gh.post_data:
-        if data.keys() == {"body"}:
-            assert "does not follow the [SymPy pull request template]" not in data["body"]
-    # The release notes check ran (posted a status).
-    assert statuses_url in gh.post_urls
-
-
-@parametrize('action', ['reopened', 'synchronize', 'edited'])
-async def test_pr_template_not_run_on_non_opened(action):
-    # A non-template-compliant (but release-notes-valid) description on a
-    # non-``opened`` action must NOT close the PR; the release notes check runs
-    # as usual.
-    event = _event(_template_event_data(body=non_template_description, action=action))
-
-    commits = [
-        {
-            'author': {'login': 'asmeurer'},
-            'commit': {'message': "A good commit"},
-            'sha': sha,
-            'url': commit_url,
-        },
-    ]
-    commit = {
-        'files': [{'status': 'modified'}],
-        'parents': [{"url": commit_url, "sha": sha}],
-    }
-    comments = [{'user': {'login': 'asmeurer'}, 'body': "comment"}]
-    version_file = {'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n')}
-
-    getiter = {commits_url: commits, comments_url: comments}
-    getitem = {version_url: version_file, commit_url: commit}
-    post = {comments_url: {'html_url': comment_html_url}, statuses_url: {}}
-
-    gh = FakeGH(getiter=getiter, getitem=getitem, post=post)
-
-    await router.dispatch(event, gh)
-
-    # The PR was not closed and no template comment was posted.
-    assert pr_url not in gh.patch_urls
-    for data in gh.post_data:
-        if data.keys() == {"body"}:
-            assert "does not follow the [SymPy pull request template]" not in data["body"]
-    # The release notes check ran (posted a status).
-    assert statuses_url in gh.post_urls
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []

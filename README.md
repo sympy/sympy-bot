@@ -61,6 +61,10 @@ Next, you need to set up the bot on GitHub. To do so, follow these steps:
    have tried playing with using reviews instead of statuses, but I couldn't
    get it to work.
 
+4. Create a `missing-ai-disclosure` label in the repo. The bot adds this to
+   pull requests from first-time contributors that do not have an AI
+   disclosure, and closes them if the disclosure is not added within 48 hours.
+
 
 ## Testing
 

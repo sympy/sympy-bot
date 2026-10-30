@@ -13,13 +13,23 @@ from gidgethub.aiohttp import GitHubAPI
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
                         get_release_notes_filename, BEGIN_RELEASE_NOTES,
                         END_RELEASE_NOTES)
-from .pr_template import validate_pr_template, TEMPLATE_URL
+from .pr_template import check_ai_disclosure
 from .update_wiki import update_wiki
 
 router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
+# The label on pull requests that are waiting for an AI disclosure. The label
+# must exist in the repository.
+AI_DISCLOSURE_LABEL = 'missing-ai-disclosure'
+AI_DISCLOSURE_GRACE_HOURS = 48
+# Hidden marker used to find the bot's warning comment
+AI_DISCLOSURE_MARKER = '<!-- sympy-bot: missing AI disclosure -->'
+# The author_association of someone who has not had a pull request merged. The
+# opened webhook gives NONE for these authors, even though the REST API gives
+# FIRST_TIME_CONTRIBUTOR for the same pull requests.
+FIRST_TIME_ASSOCIATIONS = {'NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'}
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -38,6 +48,11 @@ async def main_post(request):
 
         # call the appropriate callback for the event
         result = await router.dispatch(event, gh)
+
+        # The bot only runs when it gets a webhook, so this is when it checks
+        # whether the grace period has run out on any pull requests.
+        if event.event == "pull_request":
+            await close_expired_ai_disclosure_prs(event, gh)
 
     return web.Response(status=200, text=str(result))
 
@@ -63,15 +78,14 @@ async def pull_request_edited(event, gh, *args, **kwargs):
     print(f"PR #{pr_number} was {event.data['action']}.")
     if event.data['pull_request']['state'] == "closed":
         print(f"PR #{pr_number} is closed, skipping")
+        if event.data['action'] == "edited":
+            await reopen_pr_if_ai_disclosure_fixed(event, gh)
         return
 
     if event.data['pull_request']['user']['login'] == "dependabot[bot]":
         await pull_request_noop(event, gh, status_message="This is a Dependabot PR. SymPy Bot not run.")
     else:
-        if event.data['action'] == "opened" and is_first_time_contributor(event):
-            closed = await close_pr_if_bad_template(event, gh)
-            if closed:
-                return
+        await update_ai_disclosure_warning(event, gh)
         await pull_request_comment_release_notes(event, gh)
     await pull_request_comment_added_deleted(event, gh)
     await rate_limit_comment(event, gh)
@@ -84,45 +98,102 @@ async def pull_request_noop(event, gh, status_message=None):
         context='sympy-bot/release-notes',
     ))
 
-# GitHub reports how the author relates to the repository in the pull
-# request's ``author_association``. A first-time contributor is one who hasn't
-# committed to this repository before (FIRST_TIME_CONTRIBUTOR), or to GitHub at
-# all (FIRST_TIMER).
-FIRST_TIME_ASSOCIATIONS = {"FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER"}
+def has_ai_disclosure_label(event):
+    labels = event.data['pull_request'].get('labels', [])
+    return any(label['name'] == AI_DISCLOSURE_LABEL for label in labels)
 
-def is_first_time_contributor(event):
-    return event.data['pull_request'].get('author_association') in FIRST_TIME_ASSOCIATIONS
+async def remove_ai_disclosure_label(issue_url, gh):
+    await gh.delete(f'{issue_url}/labels/{AI_DISCLOSURE_LABEL}')
 
-async def close_pr_if_bad_template(event, gh):
+async def withdraw_ai_disclosure_warning(issue_url, comments_url, gh):
+    await remove_ai_disclosure_label(issue_url, gh)
+    async for comment in gh.getiter(comments_url):
+        if comment['user']['login'] == USER and AI_DISCLOSURE_MARKER in comment['body']:
+            await gh.delete(comment['url'])
+
+async def update_ai_disclosure_warning(event, gh):
     """
-    Check that a newly opened pull request's description follows the pull
-    request template. If it doesn't, post a comment explaining what's wrong and
-    close the pull request.
-
-    Returns True if the pull request was closed, False otherwise.
+    Warn a first-time contributor who opens a pull request without an AI
+    disclosure, and withdraw the warning once the disclosure is added.
     """
-    status, message = validate_pr_template(event.data['pull_request']['body'])
-    if status:
-        return False
+    pull_request = event.data['pull_request']
+    action = event.data['action']
+    issue_url = pull_request['issue_url']
+    comments_url = pull_request['comments_url']
 
-    comments_url = event.data["pull_request"]["comments_url"]
-
-    template_comment_message = f"""\
-Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot).
-
-I'm closing this pull request because its description does not follow the [SymPy pull request template]({TEMPLATE_URL}):
+    if action == "opened" and pull_request.get('author_association') in FIRST_TIME_ASSOCIATIONS:
+        status, message = check_ai_disclosure(pull_request['body'])
+        if status:
+            return
+        await gh.post(issue_url + '/labels', data={'labels': [AI_DISCLOSURE_LABEL]})
+        await gh.post(comments_url, data={"body": f"""\
+{AI_DISCLOSURE_MARKER}
+Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). This pull request's description is missing something required by the [SymPy pull request template](https://github.com/sympy/sympy/blob/master/.github/PULL_REQUEST_TEMPLATE.md):
 
 {message}
 
-Feel free to open a new pull request with the same changes, but where you follow \
-the pull request template correctly. Although you cannot reopen this pull \
-request, you should be able to open a new one with the exact same changes.
-"""
+Please edit the pull request description to fix this. If it is not fixed within {AI_DISCLOSURE_GRACE_HOURS} hours, I will close this pull request. If that happens, you can still fix the description, and I will reopen it.
+"""})
+    elif has_ai_disclosure_label(event):
+        if action == "reopened":
+            # A maintainer reopened the pull request, so don't close it again.
+            await remove_ai_disclosure_label(issue_url, gh)
+        elif action == "edited" and check_ai_disclosure(pull_request['body'])[0]:
+            await withdraw_ai_disclosure_warning(issue_url, comments_url, gh)
 
-    await gh.post(comments_url, data={"body": template_comment_message})
-    await gh.patch(event.data['pull_request']['url'], data={'state': 'closed'})
+async def close_expired_ai_disclosure_prs(event, gh):
+    """
+    Close the pull requests that are still missing an AI disclosure after the
+    grace period.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    grace_period = datetime.timedelta(hours=AI_DISCLOSURE_GRACE_HOURS)
+    repo_url = event.data['repository']['url']
 
-    return True
+    async for issue in gh.getiter(f'{repo_url}/issues?labels={AI_DISCLOSURE_LABEL}&state=open'):
+        created_at = datetime.datetime.fromisoformat(issue['created_at'].replace('Z', '+00:00'))
+        if 'pull_request' not in issue or now - created_at < grace_period:
+            continue
+        # The webhook for the edit that added the disclosure may have been
+        # missed, for instance, if it timed out while the bot was starting up.
+        if check_ai_disclosure(issue['body'])[0]:
+            await withdraw_ai_disclosure_warning(issue['url'], issue['comments_url'], gh)
+            continue
+        print(f"Closing PR #{issue['number']}, which has no AI disclosure.")
+        await gh.post(issue['comments_url'], data={"body": f"""\
+I am closing this pull request because its description still does not have an AI disclosure after {AI_DISCLOSURE_GRACE_HOURS} hours.
+
+You do not need to open a new pull request. If you edit the description of this one to add the disclosure, I will reopen it.
+"""})
+        await gh.patch(issue['url'], data={'state': 'closed'})
+
+async def reopen_pr_if_ai_disclosure_fixed(event, gh):
+    """
+    Reopen a pull request that the bot closed for not having an AI disclosure
+    once the disclosure is added.
+    """
+    pull_request = event.data['pull_request']
+    if not has_ai_disclosure_label(event) or not check_ai_disclosure(pull_request['body'])[0]:
+        return
+
+    # Contributors can't normally reopen a pull request that someone else
+    # closed, so don't let this undo a close by a maintainer.
+    closed_by = None
+    async for issue_event in gh.getiter(pull_request['issue_url'] + '/events'):
+        if issue_event['event'] == 'closed':
+            closed_by = issue_event['actor']['login']
+    if closed_by != USER:
+        return
+
+    await remove_ai_disclosure_label(pull_request['issue_url'], gh)
+    comments_url = pull_request['comments_url']
+    try:
+        await gh.patch(pull_request['url'], data={'state': 'open'})
+    except BadRequest:
+        # For example, the branch was deleted or force pushed.
+        await gh.post(comments_url, data={"body": "The AI disclosure looks good now, but I was not able to reopen this pull request. Please open a new pull request with the same changes."})
+        raise
+    await gh.post(comments_url, data={"body": "Thanks for adding the AI disclosure. I have reopened this pull request."})
 
 async def pull_request_comment_release_notes(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
