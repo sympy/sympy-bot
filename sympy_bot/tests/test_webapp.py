@@ -26,10 +26,13 @@ import datetime
 import base64
 from subprocess import CalledProcessError
 import os
+import http
+from unittest.mock import AsyncMock
 
-from gidgethub import sansio
+from gidgethub import sansio, BadRequest
 
-from ..webapp import router
+from ..webapp import (router, main_post, close_expired_ai_disclosure_prs,
+                      AI_DISCLOSURE_LABEL, AI_DISCLOSURE_MARKER)
 
 # These are required for the tests to run properly
 import pytest_aiohttp
@@ -3067,3 +3070,319 @@ async def test_dependabot_pr_closed_skip():
     # Should return None and make no API calls
     assert res is None
     _assert_gh_is_empty(gh)
+
+pr_url = "https://api.github.com/repos/sympy/sympy/pulls/1"
+issue_url = "https://api.github.com/repos/sympy/sympy/issues/1"
+repo_url = "https://api.github.com/repos/sympy/sympy"
+labels_url = issue_url + '/labels'
+label_url = labels_url + '/' + AI_DISCLOSURE_LABEL
+issue_events_url = issue_url + '/events'
+expired_issues_url = f'{repo_url}/issues?labels={AI_DISCLOSURE_LABEL}&state=open'
+warning_comment_url = "https://api.github.com/repos/sympy/sympy/issues/comments/3"
+
+description_with_disclosure = """
+#### AI Generation Disclosure
+
+NO AI USE
+
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+def _ai_disclosure_event(*, body=description_with_disclosure, action='opened',
+                         state='open', author_association='NONE',
+                         labeled=False):
+    return _event({
+        'pull_request': {
+            'number': 1,
+            'state': state,
+            'merged': False,
+            'url': pr_url,
+            'issue_url': issue_url,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'user': {'login': 'asmeurer'},
+            'author_association': author_association,
+            'labels': [{'name': AI_DISCLOSURE_LABEL}] if labeled else [],
+            'head': {
+                'user': {'login': 'asmeurer'},
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': 'master',
+            },
+            'body': body,
+            'statuses_url': statuses_url,
+        },
+        'repository': {'url': repo_url},
+        'action': action,
+    })
+
+def _ai_disclosure_gh(*, existing_comments=(), issue_events=(), patch=None):
+    """
+    A FakeGH with what the release notes and added/deleted checks need
+    """
+    commits = [
+        {
+            'author': {'login': 'asmeurer'},
+            'commit': {'message': "A good commit"},
+            'sha': sha,
+            'url': commit_url,
+        },
+    ]
+    commit = {
+        'files': [{'status': 'modified'}],
+        'parents': [{"url": commit_url, "sha": sha}],
+    }
+    version_file = {'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n')}
+
+    return FakeGH(
+        getiter={
+            commits_url: commits,
+            comments_url: list(existing_comments),
+            issue_events_url: list(issue_events),
+        },
+        getitem={version_url: version_file, commit_url: commit},
+        post={
+            comments_url: {'html_url': comment_html_url},
+            statuses_url: {},
+            labels_url: [],
+        },
+        patch=patch or {},
+        delete={label_url: None, warning_comment_url: None},
+    )
+
+def _posted_comments(gh):
+    return [data['body'] for url, data in zip(gh.post_urls, gh.post_data)
+            if url == comments_url]
+
+def _warnings(gh):
+    return [comment for comment in _posted_comments(gh)
+            if AI_DISCLOSURE_MARKER in comment]
+
+@parametrize('author_association', ['NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'])
+@parametrize('body', [valid_PR_description, invalid_PR_description])
+async def test_ai_disclosure_warning(author_association, body):
+    event = _ai_disclosure_event(body=body, author_association=author_association)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.post_data[gh.post_urls.index(labels_url)] == {'labels': [AI_DISCLOSURE_LABEL]}
+    warnings = _warnings(gh)
+    assert len(warnings) == 1
+    assert "`#### AI Generation Disclosure` section is missing" in warnings[0]
+    assert "within 48 hours" in warnings[0]
+    # The warning must not be mistaken for the other comments the bot updates
+    assert "release notes entry" not in warnings[0]
+    assert "add or delete" not in warnings[0]
+    # The pull request stays open, and the release notes check still runs
+    assert gh.patch_urls == []
+    assert statuses_url in gh.post_urls
+    assert len(_posted_comments(gh)) == 2
+
+async def test_ai_disclosure_good_no_warning():
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(_ai_disclosure_event(), gh)
+
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+    assert statuses_url in gh.post_urls
+
+@parametrize('author_association', ['CONTRIBUTOR', 'COLLABORATOR', 'MEMBER', 'OWNER'])
+async def test_ai_disclosure_not_first_time(author_association):
+    event = _ai_disclosure_event(body=valid_PR_description, author_association=author_association)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+    assert statuses_url in gh.post_urls
+
+@parametrize('action', ['reopened', 'edited', 'synchronize'])
+async def test_ai_disclosure_warning_only_on_opened(action):
+    event = _ai_disclosure_event(body=valid_PR_description, action=action)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert labels_url not in gh.post_urls
+    assert _warnings(gh) == []
+
+async def test_ai_disclosure_fixed_withdraws_warning():
+    event = _ai_disclosure_event(action='edited', labeled=True)
+    gh = _ai_disclosure_gh(existing_comments=[
+        {'user': {'login': 'asmeurer'}, 'body': AI_DISCLOSURE_MARKER, 'url': existing_comment_url},
+        {'user': {'login': 'sympy-bot'}, 'body': AI_DISCLOSURE_MARKER, 'url': warning_comment_url},
+    ])
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url, warning_comment_url]
+    assert gh.patch_urls == []
+
+@parametrize('action', ['edited', 'synchronize'])
+async def test_ai_disclosure_not_fixed_keeps_label(action):
+    event = _ai_disclosure_event(body=valid_PR_description, action=action, labeled=True)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == []
+    assert _warnings(gh) == []
+
+async def test_ai_disclosure_maintainer_reopened():
+    # The disclosure is still missing, but a maintainer reopened the pull
+    # request, so removing the label stops the bot from closing it again.
+    event = _ai_disclosure_event(body=valid_PR_description, action='reopened', labeled=True)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url]
+    assert gh.patch_urls == []
+
+def _timestamp(**ago):
+    time = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(**ago)
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+def _issue(number, *, body=valid_PR_description, **ago):
+    return {
+        'number': number,
+        'body': body,
+        'created_at': _timestamp(**ago),
+        'pull_request': {},
+        'url': f'{repo_url}/issues/{number}',
+        'comments_url': f'{repo_url}/issues/{number}/comments',
+    }
+
+async def test_close_expired_ai_disclosure_prs():
+    not_a_pr = _issue(4, hours=49)
+    del not_a_pr['pull_request']
+    expired = _issue(2, hours=49)
+    gh = FakeGH(
+        getiter={expired_issues_url: [_issue(1, hours=47), expired, not_a_pr]},
+        post={expired['comments_url']: {}},
+        patch={expired['url']: {}},
+    )
+
+    await close_expired_ai_disclosure_prs(_ai_disclosure_event(), gh)
+
+    assert gh.post_urls == [expired['comments_url']]
+    assert "after 48 hours" in gh.post_data[0]['body']
+    assert "You do not need to open a new pull request" in gh.post_data[0]['body']
+    assert gh.patch_urls == [expired['url']]
+    assert gh.patch_data == [{'state': 'closed'}]
+
+async def test_close_expired_ai_disclosure_prs_already_fixed():
+    # The webhook for the edit that added the disclosure was missed
+    fixed = _issue(2, body=description_with_disclosure, hours=49)
+    warning = {'user': {'login': 'sympy-bot'}, 'body': AI_DISCLOSURE_MARKER, 'url': warning_comment_url}
+    fixed_label_url = f"{fixed['url']}/labels/{AI_DISCLOSURE_LABEL}"
+    gh = FakeGH(
+        getiter={expired_issues_url: [fixed], fixed['comments_url']: [warning]},
+        delete={fixed_label_url: None, warning_comment_url: None},
+    )
+
+    await close_expired_ai_disclosure_prs(_ai_disclosure_event(), gh)
+
+    assert gh.delete_urls == [fixed_label_url, warning_comment_url]
+    assert gh.patch_urls == []
+    assert gh.post_urls == []
+
+class FakeRequest:
+    headers = {}
+
+    async def read(self):
+        return b''
+
+async def test_main_post_closes_expired_prs(mocker):
+    gh = FakeGH(getiter={expired_issues_url: []})
+    mocker.patch('sympy_bot.webapp.GitHubAPI', return_value=gh)
+    mocker.patch('sympy_bot.webapp.sansio.Event.from_http',
+                 return_value=_ai_disclosure_event(action='closed'))
+
+    response = await main_post(FakeRequest())
+
+    assert response.status == 200
+    assert gh.getiter_urls == [expired_issues_url]
+
+closed_by_bot = [
+    {'event': 'closed', 'actor': {'login': 'asmeurer'}},
+    {'event': 'reopened', 'actor': {'login': 'asmeurer'}},
+    {'event': 'labeled', 'actor': {'login': 'asmeurer'}},
+    {'event': 'closed', 'actor': {'login': 'sympy-bot'}},
+]
+
+async def test_ai_disclosure_fixed_reopens():
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot, patch={pr_url: {}})
+
+    await router.dispatch(event, gh)
+
+    assert gh.delete_urls == [label_url]
+    assert gh.patch_urls == [pr_url]
+    assert gh.patch_data == [{'state': 'open'}]
+    assert "I have reopened this pull request" in _posted_comments(gh)[0]
+    # The other checks run when GitHub sends the reopened event
+    assert statuses_url not in gh.post_urls
+
+async def test_ai_disclosure_fixed_reopen_fails():
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
+    gh.patch = patch = AsyncMock(side_effect=BadRequest(http.HTTPStatus.UNPROCESSABLE_ENTITY))
+
+    with raises(BadRequest):
+        await router.dispatch(event, gh)
+
+    patch.assert_called_once_with(pr_url, data={'state': 'open'})
+    assert gh.delete_urls == [label_url]
+    assert "Please open a new pull request" in _posted_comments(gh)[0]
+
+@parametrize('closer', ['asmeurer', None])
+async def test_ai_disclosure_fixed_no_reopen_if_not_closed_by_bot(closer):
+    # A maintainer closed the pull request after the bot did
+    issue_events = closed_by_bot + [{'event': 'closed', 'actor': {'login': closer}}] if closer else []
+    event = _ai_disclosure_event(action='edited', state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=issue_events)
+
+    await router.dispatch(event, gh)
+
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []
+
+@parametrize('body,labeled', [
+    # Still no disclosure
+    (valid_PR_description, True),
+    # The pull request wasn't waiting for a disclosure
+    (description_with_disclosure, False),
+])
+async def test_ai_disclosure_closed_no_reopen(body, labeled):
+    event = _ai_disclosure_event(body=body, action='edited', state='closed', labeled=labeled)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
+
+    await router.dispatch(event, gh)
+
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []
+    assert gh.getiter_urls == []
+
+@parametrize('action', ['reopened', 'synchronize'])
+async def test_ai_disclosure_closed_other_actions_no_reopen(action):
+    event = _ai_disclosure_event(action=action, state='closed', labeled=True)
+    gh = _ai_disclosure_gh(issue_events=closed_by_bot)
+
+    await router.dispatch(event, gh)
+
+    assert gh.patch_urls == []
+    assert gh.delete_urls == []
+    assert gh.post_urls == []
