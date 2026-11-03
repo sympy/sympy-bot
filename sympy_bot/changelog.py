@@ -8,6 +8,11 @@ PREFIX = '* '
 SUFFIX = '{indent}([#{pr_number}](https://github.com/sympy/sympy/pull/{pr_number}) by {authors})\n'
 AUTHOR = "[@{author}](https://github.com/{author})"
 VERSION_RE = re.compile(r'\d+(?:(?:\.\d+)*(?:\.[1-9]\d*)|\.0)')
+# A version written in sympy/release.py, which older branches have. Newer
+# branches get the version from the git tags with setuptools-scm instead.
+STATIC_VERSION_RE = re.compile(r'''^__version__\s*=\s*['"]([^'"]+)['"]''', re.MULTILINE)
+# A release tag, without the "sympy-" prefix, e.g., 1.14.0 or 1.14.0rc1
+TAG_VERSION_RE = re.compile(r'(\d+)\.(\d+)\.(\d+)(.*)')
 BEGIN_RELEASE_NOTES = "<!-- BEGIN RELEASE NOTES -->"
 END_RELEASE_NOTES = "<!-- END RELEASE NOTES -->"
 
@@ -170,6 +175,39 @@ def get_release_notes_filename(version):
     """
     v = VERSION_RE.match(version).group()
     return 'Release-Notes-for-' + v + '.md'
+
+def sort_tag_versions(tag_versions):
+    """
+    Sort release tag versions from newest to oldest, ignoring those that
+    aren't of the form X.Y.Z, optionally followed by a prerelease suffix.
+    """
+    keyed = []
+    for tag_version in tag_versions:
+        m = TAG_VERSION_RE.fullmatch(tag_version)
+        if m:
+            major, minor, patch, suffix = m.groups()
+            # A final release is newer than its prereleases
+            keyed.append(((int(major), int(minor), int(patch), not suffix, suffix), tag_version))
+    return [tag_version for key, tag_version in sorted(keyed, reverse=True)]
+
+def get_version_from_tag(tag_version, branch):
+    """
+    Return the version of a commit on ``branch`` whose most recent release tag
+    is ``tag_version``.
+
+    This follows the release-branch-semver scheme that SymPy uses with
+    setuptools-scm: after a final release, a release branch named X.Y is
+    working on the next patch release and any other branch is working on the
+    next minor release. After a prerelease, the branch is working on that
+    release.
+    """
+    major, minor, patch, suffix = TAG_VERSION_RE.fullmatch(tag_version).groups()
+    major, minor, patch = int(major), int(minor), int(patch)
+    if suffix:
+        return f'{major}.{minor}.{patch}'
+    if branch == f'{major}.{minor}':
+        return f'{major}.{minor}.{patch + 1}'
+    return f'{major}.{minor + 1}.0'
 
 def format_authors(authors):
     authors = sorted(authors, key=str.lower)

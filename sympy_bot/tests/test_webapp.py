@@ -27,9 +27,11 @@ import base64
 from subprocess import CalledProcessError
 import os
 
-from gidgethub import sansio
+import http
 
-from ..webapp import router, pull_request_comment_release_notes
+from gidgethub import sansio, BadRequest
+
+from ..webapp import router, pull_request_comment_release_notes, get_version
 
 # These are required for the tests to run properly
 import pytest_aiohttp
@@ -139,6 +141,8 @@ commit_url = commit_url_template.format(sha=sha)
 version_url_template = 'https://api.github.com/repos/sympy/sympy/contents/sympy/release.py?ref={ref}'
 version_url = version_url_template.format(ref='master')
 html_url = "https://github.com/sympy/sympy"
+repo_url = "https://api.github.com/repos/sympy/sympy"
+tags_url = repo_url + "/git/matching-refs/tags/sympy-"
 wiki_url = "https://github.com/sympy/sympy.wiki"
 comment_html_url = 'https://github.com/sympy/sympy/pulls/1#issuecomment-1'
 comment_html_url2 = 'https://github.com/sympy/sympy/pulls/1#issuecomment-2'
@@ -1871,6 +1875,7 @@ async def test_bad_version_file(action):
                 'repo': {
                     'contents_url': contents_url,
                     'html_url': html_url,
+                    'url': repo_url,
                 },
                 'ref': 'master',
             },
@@ -1945,9 +1950,13 @@ async def test_bad_version_file(action):
         'content': base64.b64encode(b'\n'),
         }
 
+    # No release tags that the version can be found from
+    tags = [{'ref': 'refs/tags/sympy-1.1rc1'}]
+
     getiter = {
         commits_url: commits,
         comments_url: comments,
+        tags_url: tags,
     }
 
     getitem = {
@@ -3244,3 +3253,86 @@ async def test_ai_disclosure_does_not_affect_release_notes_status():
     assert status is True
     assert changelogs
     assert _status(gh)['state'] == 'failure'
+
+def _version_event(base_ref):
+    return _event({
+        'pull_request': {
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                    'url': repo_url,
+                },
+                'ref': base_ref,
+            },
+        },
+    })
+
+# setuptools-scm doesn't write the version into sympy/release.py
+setuptools_scm_version_file = {
+    'content': base64.b64encode(b'__version__: str\ntry:\n    from sympy._version import __version__\nexcept ImportError:\n    __version__ = "0+unknown.uninstalled"\n'),
+}
+
+release_tags = [{'ref': f'refs/tags/sympy-{v}'} for v in
+                ['1.1rc1', '1.13.3', '1.14.0rc1', '1.14.0rc2', '1.14.0', '1.15.0rc1']]
+
+def _compare_url(tag_version, base_ref):
+    return f'{repo_url}/compare/sympy-{tag_version}...{base_ref}?per_page=1'
+
+@parametrize('base_ref,reachable,version', [
+    # The development branch after the last release
+    ('master', ['1.14.0', '1.14.0rc1'], '1.15.0'),
+    # A release branch after its final release
+    ('1.14', ['1.14.0', '1.14.0rc1'], '1.14.1'),
+    # A release branch after a prerelease
+    ('1.15', ['1.15.0rc1', '1.14.0'], '1.15.0'),
+    ('1.14', ['1.14.0rc2'], '1.14.0'),
+])
+async def test_get_version_from_tags(base_ref, reachable, version):
+    newest_first = ['1.15.0rc1', '1.14.0', '1.14.0rc2', '1.14.0rc1', '1.13.3']
+    getitem = {version_url_template.format(ref=base_ref): setuptools_scm_version_file}
+    for tag_version in newest_first:
+        status = 'ahead' if tag_version in reachable else 'diverged'
+        getitem[_compare_url(tag_version, base_ref)] = {'status': status}
+    gh = FakeGH(getiter={tags_url: release_tags}, getitem=getitem)
+
+    assert await get_version(_version_event(base_ref), gh) == version
+
+    # The tags are tried from newest to oldest until one is reachable
+    first = min(newest_first.index(tag_version) for tag_version in reachable)
+    assert gh.getitem_urls[1:] == [_compare_url(tag_version, base_ref)
+                                   for tag_version in newest_first[:first + 1]]
+
+async def test_get_version_static():
+    # Older branches still have the version in sympy/release.py
+    version_file = {'content': base64.b64encode(b'from __future__ import annotations\n__version__ = "1.14.0"\n')}
+    gh = FakeGH(getitem={version_url_template.format(ref='1.14'): version_file})
+
+    assert await get_version(_version_event('1.14'), gh) == '1.14.0'
+    assert gh.getiter_urls == []
+
+async def test_get_version_no_release_file():
+    getitem = {_compare_url('1.14.0', 'master'): {'status': 'identical'}}
+    gh = FakeGH(getiter={tags_url: [{'ref': 'refs/tags/sympy-1.14.0'}]}, getitem=getitem)
+    # FakeGH raises KeyError for unknown URLs, so fake the 404 explicitly
+    getitem_with_404 = gh.getitem
+    async def getitem_or_404(url):
+        if url == version_url_template.format(ref='master'):
+            raise BadRequest(http.HTTPStatus.NOT_FOUND)
+        return await getitem_with_404(url)
+    gh.getitem = getitem_or_404
+
+    assert await get_version(_version_event('master'), gh) == '1.15.0'
+
+async def test_release_notes_file_from_tags():
+    event = _ai_disclosure_event(body=valid_PR_description)
+    event.data['pull_request']['base']['repo']['url'] = repo_url
+    gh = _ai_disclosure_gh()
+    gh._getitem_return[version_url] = setuptools_scm_version_file
+    gh._getiter_return[tags_url] = [{'ref': 'refs/tags/sympy-1.14.0'}]
+    gh._getitem_return[_compare_url('1.14.0', 'master')] = {'status': 'ahead'}
+
+    await router.dispatch(event, gh)
+
+    assert "https://github.com/sympy/sympy/wiki/Release-Notes-for-1.15." in gh.post_data[0]['body']
+    assert gh.post_data[1]['state'] == 'success'
