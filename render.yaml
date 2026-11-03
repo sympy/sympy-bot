@@ -8,3 +8,4 @@ services:
     dockerfilePath: Dockerfile.render
     plan: free # optional; defaults to starter
     numInstances: 1
+    healthCheckPath: /health-check
