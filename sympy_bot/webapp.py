@@ -10,9 +10,10 @@ from aiohttp import web, ClientSession
 from gidgethub import routing, sansio, BadRequest
 from gidgethub.aiohttp import GitHubAPI
 
-from .changelog import (get_changelog, update_release_notes, VERSION_RE,
+from .changelog import (get_changelog, update_release_notes,
                         get_release_notes_filename, BEGIN_RELEASE_NOTES,
-                        END_RELEASE_NOTES)
+                        END_RELEASE_NOTES, STATIC_VERSION_RE,
+                        sort_tag_versions, get_version_from_tag)
 from .pr_template import check_ai_disclosure
 from .update_wiki import update_wiki
 
@@ -101,10 +102,6 @@ async def pull_request_comment_release_notes(event, gh):
 
     users = sorted(users)
 
-    contents_url = event.data['pull_request']['base']['repo']['contents_url']
-    version_url = contents_url.replace('{+path}', RELEASE_FILE)
-    base_ref = event.data['pull_request']['base']['ref']
-
     comments = gh.getiter(comments_url)
     # Try to find an existing comment to update
     existing_comment_release_notes = None
@@ -128,18 +125,13 @@ async def pull_request_comment_release_notes(event, gh):
 
     release_notes_file = "!!ERROR!! Could not get the release notes filename!"
     if status:
-        try:
-            release_file = await gh.getitem(version_url + f'?ref={base_ref}')
-            m = VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
-        except BadRequest: # file not found
-            m = False
-        if not m:
+        version = await get_version(event, gh)
+        if not version:
             status = False
             gh_status = 'error'
             message = f"""\
-There was an error getting the version from the `{RELEASE_FILE}` file. Please open an issue at https://github.com/sympy/sympy-bot/issues."""
+There was an error getting the version from the `{RELEASE_FILE}` file or the git tags. Please open an issue at https://github.com/sympy/sympy-bot/issues."""
         else:
-            version = m.group()
             release_notes_file = get_release_notes_filename(version)
 
     status_message = "The release notes look OK" if status else "The release notes check failed"
@@ -218,6 +210,36 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help y
     ))
 
     return status, release_notes_file, changelogs, comment, users
+
+async def get_version(event, gh):
+    """
+    Get the version of the base branch of the pull request, or None if it
+    can't be found.
+    """
+    base_repo = event.data['pull_request']['base']['repo']
+    base_ref = event.data['pull_request']['base']['ref']
+
+    version_url = base_repo['contents_url'].replace('{+path}', RELEASE_FILE)
+    try:
+        release_file = await gh.getitem(version_url + f'?ref={base_ref}')
+    except BadRequest: # file not found
+        pass
+    else:
+        m = STATIC_VERSION_RE.search(base64.b64decode(release_file['content']).decode('utf-8'))
+        if m:
+            return m.group(1)
+
+    # setuptools-scm gets the version from the most recent release tag that
+    # the branch contains (git describe), so do the same.
+    repo_url = base_repo['url']
+    tag_versions = []
+    async for ref in gh.getiter(f'{repo_url}/git/matching-refs/tags/sympy-'):
+        tag_versions.append(ref['ref'].removeprefix('refs/tags/sympy-'))
+    for tag_version in sort_tag_versions(tag_versions):
+        comparison = await gh.getitem(f'{repo_url}/compare/sympy-{tag_version}...{base_ref}?per_page=1')
+        if comparison['status'] in ('ahead', 'identical'):
+            return get_version_from_tag(tag_version, base_ref)
+    return None
 
 async def rate_limit_comment(event, gh):
     comments_url = event.data["pull_request"]["comments_url"]
