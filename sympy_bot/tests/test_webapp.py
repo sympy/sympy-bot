@@ -148,6 +148,10 @@ existing_added_deleted_comment_url = "https://api.github.com/repos/sympy/sympy/i
 pr_number = 1
 
 valid_PR_description = """
+#### AI Generation Disclosure
+
+NO AI USE
+
 <!-- BEGIN RELEASE NOTES -->
 * solvers
   * new trig solvers
@@ -155,12 +159,20 @@ valid_PR_description = """
 """
 
 valid_PR_description_no_entry = """
+#### AI Generation Disclosure
+
+NO AI USE
+
 <!-- BEGIN RELEASE NOTES -->
 NO ENTRY
 <!-- END RELEASE NOTES -->
 """
 
 invalid_PR_description = """
+#### AI Generation Disclosure
+
+NO AI USE
+
 <!-- BEGIN RELEASE NOTES -->
 
 <!-- END RELEASE NOTES -->
@@ -183,6 +195,10 @@ This will be added to https://github.com/sympy/sympy/wiki/Release-Notes-for-1.2.
 
 <details><summary>Click here to see the pull request description that was parsed.</summary>
 
+
+    #### AI Generation Disclosure
+
+    NO AI USE
 
     <!-- BEGIN RELEASE NOTES -->
     * solvers
@@ -3068,14 +3084,16 @@ async def test_dependabot_pr_closed_skip():
     assert res is None
     _assert_gh_is_empty(gh)
 
-description_with_disclosure = """
-#### AI Generation Disclosure
-
-NO AI USE
-
+description_without_disclosure = """
 <!-- BEGIN RELEASE NOTES -->
 * solvers
   * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+invalid_PR_description_without_disclosure = """
+<!-- BEGIN RELEASE NOTES -->
+
 <!-- END RELEASE NOTES -->
 """
 
@@ -3135,9 +3153,10 @@ def _status(gh):
     return gh.post_data[gh.post_urls.index(statuses_url)]
 
 @parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
-@parametrize('author_association', ['NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'])
+@parametrize('author_association', ['NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER',
+                                    'CONTRIBUTOR', 'COLLABORATOR', 'MEMBER', 'OWNER'])
 async def test_ai_disclosure_missing(action, author_association):
-    event = _ai_disclosure_event(body=valid_PR_description, action=action,
+    event = _ai_disclosure_event(body=description_without_disclosure, action=action,
                                  author_association=author_association)
     gh = _ai_disclosure_gh()
 
@@ -3161,7 +3180,7 @@ async def test_ai_disclosure_missing(action, author_association):
     assert status['context'] == 'sympy-bot/release-notes'
 
 async def test_ai_disclosure_empty():
-    body = valid_PR_description + "\n#### AI Generation Disclosure\n\n<!-- NO AI USE -->\n"
+    body = description_without_disclosure + "\n#### AI Generation Disclosure\n\n<!-- NO AI USE -->\n"
     gh = _ai_disclosure_gh()
 
     await router.dispatch(_ai_disclosure_event(body=body), gh)
@@ -3172,7 +3191,7 @@ async def test_ai_disclosure_empty():
 async def test_ai_disclosure_and_release_notes_missing():
     gh = _ai_disclosure_gh()
 
-    await router.dispatch(_ai_disclosure_event(body=invalid_PR_description), gh)
+    await router.dispatch(_ai_disclosure_event(body=invalid_PR_description_without_disclosure), gh)
 
     comment = gh.post_data[0]['body']
     assert ":white_check_mark:" not in comment
@@ -3185,7 +3204,7 @@ async def test_ai_disclosure_and_release_notes_missing():
 async def test_ai_disclosure_present():
     gh = _ai_disclosure_gh()
 
-    await router.dispatch(_ai_disclosure_event(body=description_with_disclosure), gh)
+    await router.dispatch(_ai_disclosure_event(body=valid_PR_description), gh)
 
     comment = gh.post_data[0]['body']
     assert ":white_check_mark:" in comment
@@ -3194,17 +3213,6 @@ async def test_ai_disclosure_present():
     status = _status(gh)
     assert status['state'] == 'success'
     assert status['description'] == "The release notes look OK"
-
-@parametrize('author_association', ['CONTRIBUTOR', 'COLLABORATOR', 'MEMBER', 'OWNER'])
-async def test_ai_disclosure_not_first_time(author_association):
-    event = _ai_disclosure_event(body=valid_PR_description,
-                                 author_association=author_association)
-    gh = _ai_disclosure_gh()
-
-    await router.dispatch(event, gh)
-
-    assert "AI disclosure" not in gh.post_data[0]['body']
-    assert _status(gh)['state'] == 'success'
 
 async def test_ai_disclosure_updates_existing_comment():
     existing_comments = [
@@ -3216,7 +3224,7 @@ async def test_ai_disclosure_updates_existing_comment():
     ]
     gh = _ai_disclosure_gh(existing_comments=existing_comments)
 
-    await router.dispatch(_ai_disclosure_event(body=valid_PR_description), gh)
+    await router.dispatch(_ai_disclosure_event(body=description_without_disclosure), gh)
 
     assert gh.post_urls == [statuses_url]
     assert gh.patch_urls == [existing_comment_url]
@@ -3226,7 +3234,7 @@ async def test_ai_disclosure_updates_existing_comment():
 async def test_ai_disclosure_does_not_affect_release_notes_status():
     # pull_request_closed uses the returned status to decide whether to update
     # the wiki, so a missing disclosure must not stop that.
-    event = _ai_disclosure_event(body=valid_PR_description, action='closed',
+    event = _ai_disclosure_event(body=description_without_disclosure, action='closed',
                                  state='closed', merged=True)
     gh = _ai_disclosure_gh()
 

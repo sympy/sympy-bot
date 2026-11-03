@@ -20,10 +20,6 @@ router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
-# The author_association of someone who has not had a pull request merged. The
-# webhooks give NONE for these authors, even though the REST API gives
-# FIRST_TIME_CONTRIBUTOR for the same pull requests.
-FIRST_TIME_ASSOCIATIONS = {'NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'}
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -119,13 +115,10 @@ async def pull_request_comment_release_notes(event, gh):
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
-    # The AI disclosure is only required from first-time contributors. It is
-    # reported in the same status and comment as the release notes, but does
-    # not affect the returned status, so that the release notes are still
-    # added to the wiki.
-    ai_disclosure_status, ai_disclosure_message = True, ''
-    if event.data['pull_request'].get('author_association') in FIRST_TIME_ASSOCIATIONS:
-        ai_disclosure_status, ai_disclosure_message = check_ai_disclosure(event.data['pull_request']['body'])
+    # The AI disclosure is reported in the same status and comment as the
+    # release notes, but does not affect the returned status, so that the
+    # release notes are still added to the wiki.
+    ai_disclosure_status, ai_disclosure_message = check_ai_disclosure(event.data['pull_request']['body'])
 
     if status and header_in_message:
         status = False
