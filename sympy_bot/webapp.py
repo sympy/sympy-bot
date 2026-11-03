@@ -13,12 +13,17 @@ from gidgethub.aiohttp import GitHubAPI
 from .changelog import (get_changelog, update_release_notes, VERSION_RE,
                         get_release_notes_filename, BEGIN_RELEASE_NOTES,
                         END_RELEASE_NOTES)
+from .pr_template import check_ai_disclosure
 from .update_wiki import update_wiki
 
 router = routing.Router()
 
 USER = 'sympy-bot'
 RELEASE_FILE = 'sympy/release.py'
+# The author_association of someone who has not had a pull request merged. The
+# webhooks give NONE for these authors, even though the REST API gives
+# FIRST_TIME_CONTRIBUTOR for the same pull requests.
+FIRST_TIME_ASSOCIATIONS = {'NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'}
 
 async def main_post(request):
     # read the GitHub webhook payload
@@ -114,6 +119,14 @@ async def pull_request_comment_release_notes(event, gh):
 
     status, message, changelogs = get_changelog(event.data['pull_request']['body'])
 
+    # The AI disclosure is only required from first-time contributors. It is
+    # reported in the same status and comment as the release notes, but does
+    # not affect the returned status, so that the release notes are still
+    # added to the wiki.
+    ai_disclosure_status, ai_disclosure_message = True, ''
+    if event.data['pull_request'].get('author_association') in FIRST_TIME_ASSOCIATIONS:
+        ai_disclosure_status, ai_disclosure_message = check_ai_disclosure(event.data['pull_request']['body'])
+
     if status and header_in_message:
         status = False
         message = f"* The `{BEGIN_RELEASE_NOTES}` / `{END_RELEASE_NOTES}` block should go in the pull request description only, not the commit messages. It was found in the message for the commit {header_in_message}. See https://github.com/sympy/sympy/wiki/Development-workflow#changing-of-commit-messages for information on how to edit commit messages."
@@ -168,9 +181,16 @@ There was an error processing the release notes, which most likely indicates a b
                 message += f'\n\nHere is what the release notes will look like:\n{updated_fake_release_notes}\n\nThis will be added to {release_notes_url}.'
 
     release_notes_message = f"""\
-{emoji_status[status] if status else ''}
+{emoji_status[status] if status and ai_disclosure_status else ''}
 
 Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help you write a release notes entry. Please read the [guide on how to write release notes](https://github.com/sympy/sympy/wiki/Writing-Release-Notes).
+
+"""
+    if not ai_disclosure_status:
+        release_notes_message += f"""\
+{emoji_status[False]} There was an issue with the AI disclosure. **Please do not close this pull request;** instead edit the description to fix it.
+
+{ai_disclosure_message}
 
 """
     if not status:
@@ -191,6 +211,10 @@ Hi, I am the [SymPy bot](https://github.com/sympy/sympy-bot). I'm here to help y
         comment = await gh.patch(existing_comment_release_notes['url'], data={"body": release_notes_message})
     else:
         comment = await gh.post(comments_url, data={"body": release_notes_message})
+
+    if not ai_disclosure_status and gh_status == 'success':
+        gh_status = 'failure'
+        status_message = "The AI disclosure check failed"
 
     statuses_url = event.data['pull_request']['statuses_url']
     await gh.post(statuses_url, data=dict(

@@ -29,7 +29,7 @@ import os
 
 from gidgethub import sansio
 
-from ..webapp import router
+from ..webapp import router, pull_request_comment_release_notes
 
 # These are required for the tests to run properly
 import pytest_aiohttp
@@ -3067,3 +3067,172 @@ async def test_dependabot_pr_closed_skip():
     # Should return None and make no API calls
     assert res is None
     _assert_gh_is_empty(gh)
+
+description_with_disclosure = """
+#### AI Generation Disclosure
+
+NO AI USE
+
+<!-- BEGIN RELEASE NOTES -->
+* solvers
+  * new trig solvers
+<!-- END RELEASE NOTES -->
+"""
+
+def _ai_disclosure_event(*, body, action='opened', author_association='NONE',
+                         state='open', merged=False):
+    return _event({
+        'pull_request': {
+            'number': 1,
+            'state': state,
+            'merged': merged,
+            'comments_url': comments_url,
+            'commits_url': commits_url,
+            'user': {'login': 'asmeurer'},
+            'author_association': author_association,
+            'head': {
+                'user': {'login': 'asmeurer'},
+            },
+            'base': {
+                'repo': {
+                    'contents_url': contents_url,
+                    'html_url': html_url,
+                },
+                'ref': 'master',
+            },
+            'body': body,
+            'statuses_url': statuses_url,
+        },
+        'action': action,
+    })
+
+def _ai_disclosure_gh(*, existing_comments=()):
+    """
+    A FakeGH with what the release notes and added/deleted checks need
+    """
+    commits = [
+        {
+            'author': {'login': 'asmeurer'},
+            'commit': {'message': "A good commit"},
+            'sha': sha,
+            'url': commit_url,
+        },
+    ]
+    commit = {
+        'files': [{'status': 'modified'}],
+        'parents': [{"url": commit_url, "sha": sha}],
+    }
+    version_file = {'content': base64.b64encode(b'__version__ = "1.2.1.dev"\n')}
+
+    return FakeGH(
+        getiter={commits_url: commits, comments_url: list(existing_comments)},
+        getitem={version_url: version_file, commit_url: commit},
+        post={comments_url: {'html_url': comment_html_url}, statuses_url: {}},
+        patch={existing_comment_url: {'html_url': comment_html_url}},
+    )
+
+def _status(gh):
+    return gh.post_data[gh.post_urls.index(statuses_url)]
+
+@parametrize('action', ['opened', 'reopened', 'synchronize', 'edited'])
+@parametrize('author_association', ['NONE', 'FIRST_TIME_CONTRIBUTOR', 'FIRST_TIMER'])
+async def test_ai_disclosure_missing(action, author_association):
+    event = _ai_disclosure_event(body=valid_PR_description, action=action,
+                                 author_association=author_association)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert gh.post_urls == [comments_url, statuses_url]
+    comment = gh.post_data[0]['body']
+    assert ":white_check_mark:" not in comment
+    assert ":x: There was an issue with the AI disclosure" in comment
+    assert "`#### AI Generation Disclosure` section is missing" in comment
+    assert "NO AI USE" in comment
+    assert "There was an issue with the release notes" not in comment
+    # The release notes are still shown
+    assert "new trig solvers" in comment
+    assert "release notes entry" in comment
+
+    status = _status(gh)
+    assert status['state'] == 'failure'
+    assert status['description'] == "The AI disclosure check failed"
+    assert status['target_url'] == comment_html_url
+    assert status['context'] == 'sympy-bot/release-notes'
+
+async def test_ai_disclosure_empty():
+    body = valid_PR_description + "\n#### AI Generation Disclosure\n\n<!-- NO AI USE -->\n"
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(_ai_disclosure_event(body=body), gh)
+
+    assert "`#### AI Generation Disclosure` section is empty" in gh.post_data[0]['body']
+    assert _status(gh)['state'] == 'failure'
+
+async def test_ai_disclosure_and_release_notes_missing():
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(_ai_disclosure_event(body=invalid_PR_description), gh)
+
+    comment = gh.post_data[0]['body']
+    assert ":white_check_mark:" not in comment
+    assert "There was an issue with the AI disclosure" in comment
+    assert "There was an issue with the release notes" in comment
+    status = _status(gh)
+    assert status['state'] == 'failure'
+    assert status['description'] == "The release notes check failed"
+
+async def test_ai_disclosure_present():
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(_ai_disclosure_event(body=description_with_disclosure), gh)
+
+    comment = gh.post_data[0]['body']
+    assert ":white_check_mark:" in comment
+    assert ":x:" not in comment
+    assert "AI disclosure" not in comment
+    status = _status(gh)
+    assert status['state'] == 'success'
+    assert status['description'] == "The release notes look OK"
+
+@parametrize('author_association', ['CONTRIBUTOR', 'COLLABORATOR', 'MEMBER', 'OWNER'])
+async def test_ai_disclosure_not_first_time(author_association):
+    event = _ai_disclosure_event(body=valid_PR_description,
+                                 author_association=author_association)
+    gh = _ai_disclosure_gh()
+
+    await router.dispatch(event, gh)
+
+    assert "AI disclosure" not in gh.post_data[0]['body']
+    assert _status(gh)['state'] == 'success'
+
+async def test_ai_disclosure_updates_existing_comment():
+    existing_comments = [
+        {
+            'user': {'login': 'sympy-bot'},
+            'body': "release notes entry",
+            'url': existing_comment_url,
+        },
+    ]
+    gh = _ai_disclosure_gh(existing_comments=existing_comments)
+
+    await router.dispatch(_ai_disclosure_event(body=valid_PR_description), gh)
+
+    assert gh.post_urls == [statuses_url]
+    assert gh.patch_urls == [existing_comment_url]
+    assert "There was an issue with the AI disclosure" in gh.patch_data[0]['body']
+    assert _status(gh)['state'] == 'failure'
+
+async def test_ai_disclosure_does_not_affect_release_notes_status():
+    # pull_request_closed uses the returned status to decide whether to update
+    # the wiki, so a missing disclosure must not stop that.
+    event = _ai_disclosure_event(body=valid_PR_description, action='closed',
+                                 state='closed', merged=True)
+    gh = _ai_disclosure_gh()
+
+    status, release_notes_file, changelogs, comment, users = \
+        await pull_request_comment_release_notes(event, gh)
+
+    assert status is True
+    assert changelogs
+    assert _status(gh)['state'] == 'failure'
