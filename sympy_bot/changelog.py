@@ -251,6 +251,7 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
             break
     else:
         raise RuntimeError("The `## Changes` header was not found in the release notes file.")
+    authors_header_found = False
 
     for line in lines:
         new_txt.append(line)
@@ -278,6 +279,7 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
                 continue
 
         if line == "## Authors":
+            authors_header_found = True
             del new_txt[-1]
             # Keep the order from submodules.txt
             for header in valid_headers:
@@ -289,7 +291,7 @@ def update_release_notes(*, rel_notes_txt, changelogs, pr_number, authors):
             changelogs.clear()
 
     new_txt.append('')
-    if changelogs:
+    if changelogs or not authors_header_found:
         raise RuntimeError("Not all changelog entries were added. Make sure there is a header called `## Authors` at the end of the release notes.")
 
     return '\n'.join(new_txt)
