@@ -1,4 +1,5 @@
 import os
+import pytest
 
 from ..changelog import get_release_notes_filename, update_release_notes
 
@@ -233,3 +234,15 @@ def test_multiline_indent():
 
 ## Authors
 """
+
+
+def test_no_authors_header_empty_changelogs():
+    rel_notes_txt = "## Changes\n"
+
+    with pytest.raises(RuntimeError):
+        update_release_notes(
+            rel_notes_txt=rel_notes_txt,
+            changelogs={},
+            pr_number=123,
+            authors=[]
+        )
