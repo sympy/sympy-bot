@@ -292,6 +292,20 @@ automatically to see if they are formatted correctly. -->
     assert "<!-- BEGIN RELEASE NOTES -->" in message
     assert not changelogs
 
+def test_bad_header_bullet():
+    desc = """
+<!-- BEGIN RELEASE NOTES -->
+*solvers
+  * improve solving of trig equations
+<!-- END RELEASE NOTES -->
+"""
+    status, message, changelogs = get_changelog(desc)
+    assert not status
+    assert "*solvers" in message
+    assert "space after the bullet" in message
+    assert not changelogs
+
+
 def test_bad_bullet():
     desc = r"""
     <!-- BEGIN RELEASE NOTES -->
