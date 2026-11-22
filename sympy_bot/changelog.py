@@ -111,16 +111,25 @@ def get_changelog(pr_desc):
 
         else:
             if not header:
-                message_list += [
-                    '* No subheader found. Please add a header for the module, for example,',
-                    '',
-                    '  ```',
-                    '  * solvers',
-                    '    * improve solving of trig equations',
-                    '  ```',
-                    '',
-                    "  A list of valid headers can be found at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
-                ]
+                stripped_line = line.lstrip()
+                if stripped_line.startswith(('*', '-', '+')) and (
+                    len(stripped_line) == 1 or stripped_line[1] != ' '
+                ):
+                    message_list += [
+                        f'* The header line `{line}` has an invalid Markdown bullet. '
+                        'Make sure there is a space after the bullet.',
+                    ]
+                else:
+                    message_list += [
+                        '* No subheader found. Please add a header for the module, for example,',
+                        '',
+                        '  ```',
+                        '  * solvers',
+                        '    * improve solving of trig equations',
+                        '  ```',
+                        '',
+                        "  A list of valid headers can be found at https://github.com/sympy/sympy-bot/blob/master/sympy_bot/submodules.txt.",
+                    ]
                 status = False
                 break
             elif changelogs[header] and (not line or line.startswith(prefix)) and not is_bullet(line):
